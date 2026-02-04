@@ -1,0 +1,59 @@
+#include "EyeRays.h"
+
+namespace Bronnikov {
+
+EyeRays::EyeRays()
+    : Exercise("Лучи из глаз",
+               "Развитие визуальных фантомных ощущений. "
+               "Практикующий создает ощущение лучей энергии, направленных из глаз.")
+{
+    initializeInstructions();
+    initializeTargetMetrics();
+}
+
+void EyeRays::initializeInstructions() {
+    // Preparation Phase
+    addInstruction("Сядьте удобно с прямой спиной", ExercisePhase::Preparation, 10);
+    addInstruction("Держите глаза открытыми, взгляд направлен вперед", ExercisePhase::Preparation, 10);
+    addInstruction("Расслабьте лицо и глазные мышцы", ExercisePhase::Preparation, 15);
+    addInstruction("Сосредоточьтесь на области вокруг глаз", ExercisePhase::Preparation, 15);
+
+    // Execution Phase
+    addInstruction("Представьте точки света в центре каждого глаза", ExercisePhase::Execution, 20);
+    addInstruction("Почувствуйте легкое тепло в области глаз", ExercisePhase::Execution, 20);
+    addInstruction("Визуализируйте два луча света, исходящих из глаз", ExercisePhase::Execution, 30);
+    addInstruction("Направьте лучи на воображаемую точку перед собой", ExercisePhase::Execution, 25);
+    addInstruction("Усильте яркость и четкость лучей", ExercisePhase::Execution, 25);
+    addInstruction("Медленно перемещайте точку фокуса лучей в пространстве", ExercisePhase::Execution, 30);
+    addInstruction("Расширьте лучи, сделайте их шире", ExercisePhase::Execution, 25);
+    addInstruction("Попробуйте управлять каждым лучом независимо", ExercisePhase::Execution, 30);
+    addInstruction("Соедините лучи в одну мощную световую колонну", ExercisePhase::Execution, 30);
+    addInstruction("Ощутите связь между взглядом и энергией", ExercisePhase::Execution, 30);
+
+    // Completion Phase
+    addInstruction("Постепенно уменьшайте интенсивность лучей", ExercisePhase::Completion, 20);
+    addInstruction("Верните энергию обратно в область глаз", ExercisePhase::Completion, 15);
+    addInstruction("Мягко поморгайте несколько раз", ExercisePhase::Completion, 10);
+    addInstruction("Закройте глаза и отдохните", ExercisePhase::Completion, 15);
+}
+
+void EyeRays::initializeTargetMetrics() {
+    // Целевое состояние: высокая визуальная концентрация
+    // Упражнение требует точного контроля и визуального внимания
+
+    m_target_metrics.alpha_change = 8.0;            // +8% (умеренная релаксация)
+    m_target_metrics.beta_change = 16.0;            // +16% (визуальная концентрация)
+    m_target_metrics.theta_change = -5.0;           // -5% (активное состояние)
+
+    m_target_metrics.concentration_change = 22.0;   // +22% (визуальный контроль)
+    m_target_metrics.relaxation_change = 10.0;      // +10% (спокойная концентрация)
+
+    // Веса для scoring - акцент на концентрации и фокусе
+    m_target_metrics.alpha_weight = 0.6;
+    m_target_metrics.beta_weight = 1.3;             // Бета важна
+    m_target_metrics.theta_weight = 0.3;
+    m_target_metrics.concentration_weight = 1.3;    // Концентрация критична
+    m_target_metrics.relaxation_weight = 0.5;
+}
+
+} // namespace Bronnikov

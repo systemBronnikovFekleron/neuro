@@ -1,0 +1,58 @@
+#include "FastWind.h"
+
+namespace Bronnikov {
+
+FastWind::FastWind()
+    : Exercise("Быстрый ветер",
+               "Развитие динамического управления энергетическими потоками. "
+               "Практикующий создает быстрые, вихревые движения энергии вокруг тела.")
+{
+    initializeInstructions();
+    initializeTargetMetrics();
+}
+
+void FastWind::initializeInstructions() {
+    // Preparation Phase
+    addInstruction("Встаньте или сядьте свободно, руки вдоль тела", ExercisePhase::Preparation, 10);
+    addInstruction("Закройте глаза и сосредоточьтесь", ExercisePhase::Preparation, 10);
+    addInstruction("Сделайте несколько энергичных вдохов", ExercisePhase::Preparation, 15);
+    addInstruction("Почувствуйте пространство вокруг своего тела", ExercisePhase::Preparation, 15);
+
+    // Execution Phase
+    addInstruction("Представьте вихрь энергии, начинающийся у ваших ног", ExercisePhase::Execution, 25);
+    addInstruction("Почувствуйте, как вихрь быстро поднимается вверх", ExercisePhase::Execution, 25);
+    addInstruction("Ускорьте движение энергии, создавая спираль вокруг тела", ExercisePhase::Execution, 30);
+    addInstruction("Измените направление: вихрь движется сверху вниз", ExercisePhase::Execution, 25);
+    addInstruction("Создайте несколько вихрей одновременно", ExercisePhase::Execution, 30);
+    addInstruction("Ощутите быстрое движение энергии, как порывы ветра", ExercisePhase::Execution, 30);
+    addInstruction("Управляйте скоростью вихрей силой мысли", ExercisePhase::Execution, 25);
+    addInstruction("Расширьте вихри за пределы тела", ExercisePhase::Execution, 30);
+    addInstruction("Почувствуйте себя центром энергетического торнадо", ExercisePhase::Execution, 30);
+
+    // Completion Phase
+    addInstruction("Постепенно замедляйте движение вихрей", ExercisePhase::Completion, 20);
+    addInstruction("Соберите энергию обратно в центр тела", ExercisePhase::Completion, 15);
+    addInstruction("Сделайте несколько спокойных вдохов", ExercisePhase::Completion, 15);
+    addInstruction("Медленно откройте глаза", ExercisePhase::Completion, 10);
+}
+
+void FastWind::initializeTargetMetrics() {
+    // Целевое состояние: динамичная концентрация с контролем энергии
+    // Упражнение требует активного управления быстрыми процессами
+
+    m_target_metrics.alpha_change = 12.0;           // +12% (контролируемая энергия)
+    m_target_metrics.beta_change = 18.0;            // +18% (динамичная концентрация)
+    m_target_metrics.theta_change = -8.0;           // -8% (активное состояние)
+
+    m_target_metrics.concentration_change = 20.0;   // +20% (управление потоками)
+    m_target_metrics.relaxation_change = 8.0;       // +8% (контролируемое движение)
+
+    // Веса для scoring - акцент на концентрации и управлении
+    m_target_metrics.alpha_weight = 0.8;
+    m_target_metrics.beta_weight = 1.2;             // Бета активность важна
+    m_target_metrics.theta_weight = 0.4;
+    m_target_metrics.concentration_weight = 1.2;    // Концентрация важна
+    m_target_metrics.relaxation_weight = 0.6;
+}
+
+} // namespace Bronnikov

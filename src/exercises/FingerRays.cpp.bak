@@ -1,0 +1,60 @@
+#include "FingerRays.h"
+
+namespace Bronnikov {
+
+FingerRays::FingerRays()
+    : Exercise("Лучи из пальцев",
+               "Развитие точечных фантомных ощущений в кончиках пальцев. "
+               "Практикующий создает ощущение лучей энергии, направленных "
+               "из кончиков пальцев.")
+{
+    initializeInstructions();
+    initializeTargetMetrics();
+}
+
+void FingerRays::initializeInstructions() {
+    // Preparation Phase
+    addInstruction("Сядьте удобно с прямой спиной", ExercisePhase::Preparation, 10);
+    addInstruction("Положите руки на колени ладонями вверх", ExercisePhase::Preparation, 10);
+    addInstruction("Закройте глаза и сделайте несколько глубоких вдохов", ExercisePhase::Preparation, 20);
+    addInstruction("Сосредоточьте внимание на кончиках пальцев", ExercisePhase::Preparation, 15);
+
+    // Execution Phase
+    addInstruction("Представьте точки света в кончиках пальцев", ExercisePhase::Execution, 20);
+    addInstruction("Почувствуйте легкое покалывание в кончиках пальцев", ExercisePhase::Execution, 20);
+    addInstruction("Представьте, как из каждого пальца исходит тонкий луч света", ExercisePhase::Execution, 30);
+    addInstruction("Усильте ощущение лучей, сделайте их более яркими", ExercisePhase::Execution, 25);
+    addInstruction("Направьте лучи вперед, ощущайте их протяженность", ExercisePhase::Execution, 30);
+    addInstruction("Поочередно активируйте лучи: большой палец, указательный...", ExercisePhase::Execution, 40);
+    addInstruction("Попробуйте соединить лучи правой и левой руки", ExercisePhase::Execution, 30);
+    addInstruction("Управляйте направлением лучей движением мысли", ExercisePhase::Execution, 30);
+    addInstruction("Увеличьте интенсивность всех лучей одновременно", ExercisePhase::Execution, 25);
+    addInstruction("Экспериментируйте с толщиной и яркостью лучей", ExercisePhase::Execution, 30);
+
+    // Completion Phase
+    addInstruction("Постепенно уменьшайте интенсивность лучей", ExercisePhase::Completion, 20);
+    addInstruction("Соберите энергию обратно в кончики пальцев", ExercisePhase::Completion, 15);
+    addInstruction("Сожмите и разожмите кулаки несколько раз", ExercisePhase::Completion, 15);
+    addInstruction("Медленно откройте глаза", ExercisePhase::Completion, 10);
+}
+
+void FingerRays::initializeTargetMetrics() {
+    // Целевое состояние: высокая концентрация и фокус
+    // Упражнение требует точного контроля и пристального внимания
+
+    m_target_metrics.alpha_change = 5.0;            // +5% (минимальная релаксация)
+    m_target_metrics.beta_change = 15.0;            // +15% (высокая концентрация)
+    m_target_metrics.theta_change = -5.0;           // -5% (снижение сонливости)
+
+    m_target_metrics.concentration_change = 25.0;   // +25% (высокая концентрация)
+    m_target_metrics.relaxation_change = 5.0;       // +5% (минимальная)
+
+    // Веса для scoring - акцент на концентрации и фокусе
+    m_target_metrics.alpha_weight = 0.5;            // Релаксация менее важна
+    m_target_metrics.beta_weight = 1.5;             // Концентрация очень важна
+    m_target_metrics.theta_weight = 0.3;
+    m_target_metrics.concentration_weight = 1.5;    // Концентрация критична
+    m_target_metrics.relaxation_weight = 0.3;       // Релаксация вторична
+}
+
+} // namespace Bronnikov

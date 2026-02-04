@@ -1,0 +1,28 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <!-- Main application -->
+        <file>main.qml</file>
+
+        <!-- Screens -->
+        <file>screens/HomeScreen.qml</file>
+        <file>screens/PreparationScreen.qml</file>
+        <file>screens/CalibrationScreen.qml</file>
+        <file>screens/ExerciseScreen.qml</file>
+        <file>screens/ResultsScreen.qml</file>
+        <file>screens/StatisticsScreen.qml</file>
+        <file>screens/ProfileScreen.qml</file>
+        <file>screens/SettingsScreen.qml</file>
+
+        <!-- Components -->
+        <file>components/ExerciseCard.qml</file>
+        <file>components/MetricsPanel.qml</file>
+        <file>components/CustomProgressBar.qml</file>
+        <file>components/StageSelector.qml</file>
+        <file>components/qmldir</file>
+
+        <!-- Styles -->
+        <file>styles/Theme.qml</file>
+        <file>styles/qmldir</file>
+    </qresource>
+</RCC>

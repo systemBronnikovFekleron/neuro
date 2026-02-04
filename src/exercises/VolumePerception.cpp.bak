@@ -1,0 +1,62 @@
+#include "VolumePerception.h"
+
+namespace Bronnikov {
+
+VolumePerception::VolumePerception()
+    : Exercise("Восприятие объема",
+               "Развитие трехмерного энергетического восприятия. "
+               "Практикующий воспринимает объемные энергетические структуры "
+               "и пространственные отношения.")
+{
+    initializeInstructions();
+    initializeTargetMetrics();
+}
+
+void VolumePerception::initializeInstructions() {
+    // Preparation Phase
+    addInstruction("Сядьте удобно с прямой спиной", ExercisePhase::Preparation, 10);
+    addInstruction("Закройте глаза", ExercisePhase::Preparation, 10);
+    addInstruction("Сделайте несколько глубоких вдохов", ExercisePhase::Preparation, 20);
+    addInstruction("Сосредоточьтесь на пространстве вокруг вас", ExercisePhase::Preparation, 15);
+
+    // Execution Phase
+    addInstruction("Представьте перед собой куб светлой энергии (20x20x20 см)", ExercisePhase::Execution, 30);
+    addInstruction("Почувствуйте все грани куба одновременно", ExercisePhase::Execution, 30);
+    addInstruction("Ощутите внутренний объем куба", ExercisePhase::Execution, 25);
+    addInstruction("Медленно вращайте куб в пространстве", ExercisePhase::Execution, 30);
+    addInstruction("Измените форму: куб превращается в сферу", ExercisePhase::Execution, 30);
+    addInstruction("Почувствуйте поверхность и объем сферы", ExercisePhase::Execution, 25);
+    addInstruction("Создайте вторую сферу рядом с первой", ExercisePhase::Execution, 30);
+    addInstruction("Ощутите обе сферы одновременно", ExercisePhase::Execution, 30);
+    addInstruction("Соедините сферы энергетической нитью", ExercisePhase::Execution, 25);
+    addInstruction("Создайте трехмерную структуру из нескольких объектов", ExercisePhase::Execution, 35);
+    addInstruction("Воспринимайте всю структуру как единое целое", ExercisePhase::Execution, 35);
+    addInstruction("Расширьте восприятие на все пространство вокруг вас", ExercisePhase::Execution, 30);
+
+    // Completion Phase
+    addInstruction("Постепенно растворите все объекты", ExercisePhase::Completion, 20);
+    addInstruction("Верните внимание к своему телу", ExercisePhase::Completion, 15);
+    addInstruction("Сделайте несколько глубоких вдохов", ExercisePhase::Completion, 15);
+    addInstruction("Медленно откройте глаза", ExercisePhase::Completion, 10);
+}
+
+void VolumePerception::initializeTargetMetrics() {
+    // Целевое состояние: высокая пространственная обработка
+    // Упражнение требует активной работы визуально-пространственных областей
+
+    m_target_metrics.alpha_change = 15.0;           // +15% (спокойная концентрация)
+    m_target_metrics.beta_change = 20.0;            // +20% (сложная обработка)
+    m_target_metrics.theta_change = 5.0;            // +5% (творческая визуализация)
+
+    m_target_metrics.concentration_change = 28.0;   // +28% (высокая концентрация)
+    m_target_metrics.relaxation_change = 12.0;      // +12% (контролируемая)
+
+    // Веса для scoring - акцент на концентрации и бета-активности
+    m_target_metrics.alpha_weight = 0.8;
+    m_target_metrics.beta_weight = 1.4;             // Бета критична
+    m_target_metrics.theta_weight = 0.5;
+    m_target_metrics.concentration_weight = 1.5;    // Концентрация критична
+    m_target_metrics.relaxation_weight = 0.6;
+}
+
+} // namespace Bronnikov
