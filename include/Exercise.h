@@ -13,9 +13,9 @@ namespace Bronnikov {
 enum class ExerciseStage {
     Preparatory = 0,  // Подготовительная ступень (базовая энергетика - 10 упражнений)
     Stage1 = 1,       // 1-я ступень: Экология духа (18 упражнений из методички 2011)
-    Stage2 = 2,       // 2-я ступень: Зрение вне глаз (25 упражнений альтернативного видения)
-    Stage3 = 3,       // 3-я ступень: Экран внутреннего видения (15 упражнений работы с ЛБК)
-    Stage4 = 4        // 4-я ступень: Радарное видение (10 упражнений информационного развития)
+    Stage2 = 2,       // 2-я ступень: Внутреннее видение (25 упражнений альтернативного видения)
+    Stage3 = 3,       // 3-я ступень: Радарное видение (25 упражнений информационного развития)
+    Stage4 = 4        // 4-я ступень: НЕ ИСПОЛЬЗУЕТСЯ (упражнения перенесены в Stage3)
 };
 
 /**
@@ -25,9 +25,9 @@ inline std::string getStageDisplayName(ExerciseStage stage) {
     switch (stage) {
         case ExerciseStage::Preparatory: return "Подготовительная ступень";
         case ExerciseStage::Stage1:      return "1-я ступень: Экология духа";
-        case ExerciseStage::Stage2:      return "2-я ступень: Зрение вне глаз";
-        case ExerciseStage::Stage3:      return "3-я ступень: Экран внутреннего видения";
-        case ExerciseStage::Stage4:      return "4-я ступень: Радарное видение";
+        case ExerciseStage::Stage2:      return "2-я ступень: Внутреннее видение";
+        case ExerciseStage::Stage3:      return "3-я ступень: Радарное видение";
+        case ExerciseStage::Stage4:      return "4-я ступень: НЕ ИСПОЛЬЗУЕТСЯ";
         default:                         return "Неизвестная ступень";
     }
 }

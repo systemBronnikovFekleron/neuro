@@ -6,8 +6,8 @@ CosmicConsciousness::CosmicConsciousness()
     : Exercise("Космическое сознание",
                "Высшее упражнение: единение с универсальным сознанием через радарное видение.")
 {
-    m_stage = ExerciseStage::Stage4;
-    m_order_in_stage = 10;
+    m_stage = ExerciseStage::Stage3;
+    m_order_in_stage = 25;
     m_duration_minutes = 30;
     initializeInstructions();
     initializeTargetMetrics();

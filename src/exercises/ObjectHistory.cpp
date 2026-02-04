@@ -6,8 +6,8 @@ ObjectHistory::ObjectHistory()
     : Exercise("Считывание истории объектов",
                "Восприятие информационного следа: история владения, события, эмоции.")
 {
-    m_stage = ExerciseStage::Stage4;
-    m_order_in_stage = 5;
+    m_stage = ExerciseStage::Stage3;
+    m_order_in_stage = 20;
     m_duration_minutes = 18;
     initializeInstructions();
     initializeTargetMetrics();

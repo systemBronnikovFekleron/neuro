@@ -6,8 +6,8 @@ AuraReading::AuraReading()
     : Exercise("Чтение ауры",
                "Восприятие и интерпретация энергетической ауры живых существ.")
 {
-    m_stage = ExerciseStage::Stage4;
-    m_order_in_stage = 2;
+    m_stage = ExerciseStage::Stage3;
+    m_order_in_stage = 17;
     m_duration_minutes = 16;
     initializeInstructions();
     initializeTargetMetrics();

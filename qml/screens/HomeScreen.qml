@@ -133,8 +133,8 @@ Item {
 
                     Text {
                         Layout.alignment: Qt.AlignHCenter
-                        Layout.preferredWidth: 500
-                        text: "Выберите Подготовительную ступень для начала практики"
+                        Layout.preferredWidth: 600
+                        text: "78 упражнений методики Бронникова • 4 ступени обучения"
                         font.pixelSize: Theme.fontSizeBody
                         color: "#1a1a1a"
                         wrapMode: Text.WordWrap
@@ -145,12 +145,12 @@ Item {
 
             // Селектор ступени
             ComboBox {
-                Layout.preferredWidth: 300
+                Layout.preferredWidth: 350
                 model: [
-                    "Подготовительная ступень",
-                    "1-я ступень: Зрение вне глаз",
-                    "2-я ступень: Экран ЛБК",
-                    "3-я ступень: Информационное развитие"
+                    "Подготовительная ступень (10 упр.)",
+                    "1-я ступень: Экология духа (18 упр.)",
+                    "2-я ступень: Внутреннее видение (25 упр.)",
+                    "3-я ступень: Радарное видение (25 упр.)"
                 ]
                 currentIndex: 0
 

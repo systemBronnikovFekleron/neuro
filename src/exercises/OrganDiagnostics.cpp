@@ -6,8 +6,8 @@ OrganDiagnostics::OrganDiagnostics()
     : Exercise("Диагностика внутренних органов",
                "Глубокое сканирование состояния внутренних органов через радарное видение.")
 {
-    m_stage = ExerciseStage::Stage4;
-    m_order_in_stage = 4;
+    m_stage = ExerciseStage::Stage3;
+    m_order_in_stage = 19;
     m_duration_minutes = 22;
     initializeInstructions();
     initializeTargetMetrics();

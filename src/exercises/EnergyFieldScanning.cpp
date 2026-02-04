@@ -6,8 +6,8 @@ EnergyFieldScanning::EnergyFieldScanning()
     : Exercise("Сканирование энергетических полей",
                "Радарное восприятие энергетических структур объектов и людей.")
 {
-    m_stage = ExerciseStage::Stage4;
-    m_order_in_stage = 1;
+    m_stage = ExerciseStage::Stage3;
+    m_order_in_stage = 16;
     m_duration_minutes = 18;
     initializeInstructions();
     initializeTargetMetrics();

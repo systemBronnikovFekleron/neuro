@@ -6,8 +6,8 @@ ChakraPerception::ChakraPerception()
     : Exercise("Восприятие чакр",
                "Сканирование и анализ состояния энергетических центров (чакр).")
 {
-    m_stage = ExerciseStage::Stage4;
-    m_order_in_stage = 3;
+    m_stage = ExerciseStage::Stage3;
+    m_order_in_stage = 18;
     m_duration_minutes = 20;
     initializeInstructions();
     initializeTargetMetrics();

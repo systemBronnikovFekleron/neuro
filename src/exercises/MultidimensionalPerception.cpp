@@ -6,8 +6,8 @@ MultidimensionalPerception::MultidimensionalPerception()
     : Exercise("Многомерное восприятие",
                "Восприятие реальности в нескольких измерениях одновременно.")
 {
-    m_stage = ExerciseStage::Stage4;
-    m_order_in_stage = 9;
+    m_stage = ExerciseStage::Stage3;
+    m_order_in_stage = 24;
     m_duration_minutes = 24;
     initializeInstructions();
     initializeTargetMetrics();

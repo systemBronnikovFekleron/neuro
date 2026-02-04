@@ -68,6 +68,25 @@ void ExerciseModel::loadExercises()
 {
     beginResetModel();
     m_exercises = m_library->getExercises();
+
+    // DEBUG: Вывод количества загруженных упражнений
+    qDebug() << "[ExerciseModel] Loaded exercises:" << m_exercises.size();
+
+    // DEBUG: Вывод упражнений по ступеням
+    int stage0 = 0, stage1 = 0, stage2 = 0, stage3 = 0, stage4 = 0;
+    for (const auto& ex : m_exercises) {
+        switch (ex->getStage()) {
+            case Bronnikov::ExerciseStage::Preparatory: stage0++; break;
+            case Bronnikov::ExerciseStage::Stage1: stage1++; break;
+            case Bronnikov::ExerciseStage::Stage2: stage2++; break;
+            case Bronnikov::ExerciseStage::Stage3: stage3++; break;
+            case Bronnikov::ExerciseStage::Stage4: stage4++; break;
+        }
+    }
+    qDebug() << "[ExerciseModel] By stage - Prep:" << stage0
+             << "Stage1:" << stage1 << "Stage2:" << stage2
+             << "Stage3:" << stage3 << "Stage4:" << stage4;
+
     endResetModel();
     emit countChanged();
     emit exercisesLoaded();

@@ -6,8 +6,8 @@ InformationFieldAccess::InformationFieldAccess()
     : Exercise("Доступ к информационному полю",
                "Подключение к глобальному информационному полю для получения знаний.")
 {
-    m_stage = ExerciseStage::Stage4;
-    m_order_in_stage = 7;
+    m_stage = ExerciseStage::Stage3;
+    m_order_in_stage = 22;
     m_duration_minutes = 22;
     initializeInstructions();
     initializeTargetMetrics();

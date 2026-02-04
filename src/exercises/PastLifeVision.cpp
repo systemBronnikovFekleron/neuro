@@ -6,8 +6,8 @@ PastLifeVision::PastLifeVision()
     : Exercise("Видение прошлых воплощений",
                "Доступ к информации о прошлых жизнях через радарное сканирование.")
 {
-    m_stage = ExerciseStage::Stage4;
-    m_order_in_stage = 8;
+    m_stage = ExerciseStage::Stage3;
+    m_order_in_stage = 23;
     m_duration_minutes = 25;
     initializeInstructions();
     initializeTargetMetrics();

@@ -6,8 +6,8 @@ DistantHealing::DistantHealing()
     : Exercise("Дистанционное целительство",
                "Передача целительной энергии на расстояние через радарное видение.")
 {
-    m_stage = ExerciseStage::Stage4;
-    m_order_in_stage = 6;
+    m_stage = ExerciseStage::Stage3;
+    m_order_in_stage = 21;
     m_duration_minutes = 20;
     initializeInstructions();
     initializeTargetMetrics();
