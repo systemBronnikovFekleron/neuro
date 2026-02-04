@@ -1,4 +1,6 @@
 #include "ExerciseLibrary.h"
+
+// Подготовительная ступень (10 упражнений)
 #include "EnergyBall.h"
 #include "BallMovement.h"
 #include "FingerRays.h"
@@ -9,6 +11,82 @@
 #include "HeavenEarth.h"
 #include "HeavyLight.h"
 #include "VolumePerception.h"
+
+// 1-я ступень "Экология духа" (18 упражнений)
+#include "MorphologicalFields.h"
+#include "PhantomSensations.h"
+#include "VerticalPumping.h"
+#include "HeavinessLightness.h"
+#include "EnergySeedIntroduction.h"
+#include "HeadPumping.h"
+#include "SpiritImpulse.h"
+#include "TibetanMassage.h"
+#include "SmallDragon.h"
+#include "BellSwing.h"
+#include "EnergeticCocoon.h"
+#include "EyePumping.h"
+#include "HorizontalPumping.h"
+#include "ThoughtBreathing.h"
+#include "ObjectWork.h"
+#include "AnatomicalAtlas.h"
+#include "AbstractModels.h"
+#include "ScreenActivation.h"
+
+// 2-я ступень "Зрение вне глаз" (25 упражнений)
+#include "PositivePsychology.h"
+#include "EnergyHandsStage1.h"
+#include "SensingPhantom.h"
+#include "ScreenControl.h"
+#include "ScreenColoring.h"
+#include "NumberTable.h"
+#include "ColoredCellsTable.h"
+#include "ColoredPicturesTable.h"
+#include "SpatialMemory.h"
+#include "RouteMemory.h"
+#include "HandColorVision.h"
+#include "HandSymbolVision.h"
+#include "HandTextVision.h"
+#include "BodyPartVision.h"
+#include "InternalOrgansVision.h"
+#include "ObjectVision.h"
+#include "ImageTransformation.h"
+#include "ColoredTextDrawing.h"
+#include "TextRotation.h"
+#include "DepthVision.h"
+#include "BlindMovement.h"
+#include "RemoteVision.h"
+#include "DarkVision.h"
+#include "WallVision.h"
+#include "SphereVision.h"
+
+// 3-я ступень "Экран внутреннего видения" (15 упражнений)
+#include "BiocomputerActivation.h"
+#include "InformationLoading.h"
+#include "VirtualKeyboard.h"
+#include "ImageProcessing.h"
+#include "CreativeVisualization.h"
+#include "MemoryPalace.h"
+#include "MathCalculations.h"
+#include "InformationSearch.h"
+#include "LanguageTranslation.h"
+#include "ProblemSolving.h"
+#include "TimeManagement.h"
+#include "MusicCreation.h"
+#include "DataEncryption.h"
+#include "FuturePrediction.h"
+#include "BiocomputerMastery.h"
+
+// 4-я ступень "Радарное видение" (10 упражнений)
+#include "EnergyFieldScanning.h"
+#include "AuraReading.h"
+#include "ChakraPerception.h"
+#include "OrganDiagnostics.h"
+#include "DistantHealing.h"
+#include "InformationFieldAccess.h"
+#include "PastLifeVision.h"
+#include "ObjectHistory.h"
+#include "MultidimensionalPerception.h"
+#include "CosmicConsciousness.h"
 
 #include <iostream>
 #include <limits>
@@ -22,7 +100,7 @@ ExerciseLibrary::ExerciseLibrary() {
 }
 
 void ExerciseLibrary::registerExercises() {
-    // Регистрируем все 10 упражнений методики Бронникова (1-я ступень)
+    // Подготовительная ступень (10 упражнений)
     m_exercises.push_back(std::make_shared<EnergyBall>());
     m_exercises.push_back(std::make_shared<BallMovement>());
     m_exercises.push_back(std::make_shared<FingerRays>());
@@ -33,6 +111,82 @@ void ExerciseLibrary::registerExercises() {
     m_exercises.push_back(std::make_shared<HeavenEarth>());
     m_exercises.push_back(std::make_shared<HeavyLight>());
     m_exercises.push_back(std::make_shared<VolumePerception>());
+
+    // 1-я ступень "Экология духа" (18 упражнений)
+    m_exercises.push_back(std::make_shared<MorphologicalFields>());
+    m_exercises.push_back(std::make_shared<PhantomSensations>());
+    m_exercises.push_back(std::make_shared<VerticalPumping>());
+    m_exercises.push_back(std::make_shared<HeavinessLightness>());
+    m_exercises.push_back(std::make_shared<EnergySeedIntroduction>());
+    m_exercises.push_back(std::make_shared<HeadPumping>());
+    m_exercises.push_back(std::make_shared<SpiritImpulse>());
+    m_exercises.push_back(std::make_shared<TibetanMassage>());
+    m_exercises.push_back(std::make_shared<SmallDragon>());
+    m_exercises.push_back(std::make_shared<BellSwing>());
+    m_exercises.push_back(std::make_shared<EnergeticCocoon>());
+    m_exercises.push_back(std::make_shared<EyePumping>());
+    m_exercises.push_back(std::make_shared<HorizontalPumping>());
+    m_exercises.push_back(std::make_shared<ThoughtBreathing>());
+    m_exercises.push_back(std::make_shared<ObjectWork>());
+    m_exercises.push_back(std::make_shared<AnatomicalAtlas>());
+    m_exercises.push_back(std::make_shared<AbstractModels>());
+    m_exercises.push_back(std::make_shared<ScreenActivation>());
+
+    // 2-я ступень "Зрение вне глаз" (25 упражнений)
+    m_exercises.push_back(std::make_shared<PositivePsychology>());
+    m_exercises.push_back(std::make_shared<EnergyHandsStage1>());
+    m_exercises.push_back(std::make_shared<SensingPhantom>());
+    m_exercises.push_back(std::make_shared<ScreenControl>());
+    m_exercises.push_back(std::make_shared<ScreenColoring>());
+    m_exercises.push_back(std::make_shared<NumberTable>());
+    m_exercises.push_back(std::make_shared<ColoredCellsTable>());
+    m_exercises.push_back(std::make_shared<ColoredPicturesTable>());
+    m_exercises.push_back(std::make_shared<SpatialMemory>());
+    m_exercises.push_back(std::make_shared<RouteMemory>());
+    m_exercises.push_back(std::make_shared<HandColorVision>());
+    m_exercises.push_back(std::make_shared<HandSymbolVision>());
+    m_exercises.push_back(std::make_shared<HandTextVision>());
+    m_exercises.push_back(std::make_shared<BodyPartVision>());
+    m_exercises.push_back(std::make_shared<InternalOrgansVision>());
+    m_exercises.push_back(std::make_shared<ObjectVision>());
+    m_exercises.push_back(std::make_shared<ImageTransformation>());
+    m_exercises.push_back(std::make_shared<ColoredTextDrawing>());
+    m_exercises.push_back(std::make_shared<TextRotation>());
+    m_exercises.push_back(std::make_shared<DepthVision>());
+    m_exercises.push_back(std::make_shared<BlindMovement>());
+    m_exercises.push_back(std::make_shared<RemoteVision>());
+    m_exercises.push_back(std::make_shared<DarkVision>());
+    m_exercises.push_back(std::make_shared<WallVision>());
+    m_exercises.push_back(std::make_shared<SphereVision>());
+
+    // 3-я ступень "Экран внутреннего видения" (15 упражнений)
+    m_exercises.push_back(std::make_shared<BiocomputerActivation>());
+    m_exercises.push_back(std::make_shared<InformationLoading>());
+    m_exercises.push_back(std::make_shared<VirtualKeyboard>());
+    m_exercises.push_back(std::make_shared<ImageProcessing>());
+    m_exercises.push_back(std::make_shared<CreativeVisualization>());
+    m_exercises.push_back(std::make_shared<MemoryPalace>());
+    m_exercises.push_back(std::make_shared<MathCalculations>());
+    m_exercises.push_back(std::make_shared<InformationSearch>());
+    m_exercises.push_back(std::make_shared<LanguageTranslation>());
+    m_exercises.push_back(std::make_shared<ProblemSolving>());
+    m_exercises.push_back(std::make_shared<TimeManagement>());
+    m_exercises.push_back(std::make_shared<MusicCreation>());
+    m_exercises.push_back(std::make_shared<DataEncryption>());
+    m_exercises.push_back(std::make_shared<FuturePrediction>());
+    m_exercises.push_back(std::make_shared<BiocomputerMastery>());
+
+    // 4-я ступень "Радарное видение" (10 упражнений)
+    m_exercises.push_back(std::make_shared<EnergyFieldScanning>());
+    m_exercises.push_back(std::make_shared<AuraReading>());
+    m_exercises.push_back(std::make_shared<ChakraPerception>());
+    m_exercises.push_back(std::make_shared<OrganDiagnostics>());
+    m_exercises.push_back(std::make_shared<DistantHealing>());
+    m_exercises.push_back(std::make_shared<InformationFieldAccess>());
+    m_exercises.push_back(std::make_shared<PastLifeVision>());
+    m_exercises.push_back(std::make_shared<ObjectHistory>());
+    m_exercises.push_back(std::make_shared<MultidimensionalPerception>());
+    m_exercises.push_back(std::make_shared<CosmicConsciousness>());
 }
 
 const std::vector<std::shared_ptr<Exercise>>& ExerciseLibrary::getExercises() const {
