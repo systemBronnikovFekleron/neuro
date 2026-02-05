@@ -25,4 +25,12 @@
         <file>styles/Theme.qml</file>
         <file>styles/qmldir</file>
     </qresource>
+
+    <!-- Sound Effects -->
+    <qresource prefix="/sounds">
+        <file>../assets/sounds/phase_change.wav</file>
+        <file>../assets/sounds/success.wav</file>
+        <file>../assets/sounds/exercise_start.wav</file>
+        <file>../assets/sounds/exercise_complete.wav</file>
+    </qresource>
 </RCC>

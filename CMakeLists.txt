@@ -37,6 +37,8 @@ if(BUILD_GUI)
         Qml
         Charts
         Svg
+        Multimedia
+        TextToSpeech
     )
 
     # Enable Qt MOC, UIC, RCC
@@ -177,6 +179,7 @@ set(FEEDBACK_SOURCES
 set(DATABASE_SOURCES
     src/database/SessionDatabase.cpp
     src/database/UserProfile.cpp
+    src/database/UserManager.cpp
     src/database/SessionStorage.cpp
 )
 
@@ -194,6 +197,8 @@ if(BUILD_GUI)
         src/gui/models/SessionModel.cpp
         src/gui/controllers/DeviceController.cpp
         src/gui/controllers/ExerciseController.cpp
+        src/gui/controllers/SettingsController.cpp
+        src/gui/controllers/AudioController.cpp
         src/gui/main_gui.cpp
     )
 
@@ -240,6 +245,8 @@ if(BUILD_GUI)
         Qt6::Qml
         Qt6::Charts
         Qt6::Svg
+        Qt6::Multimedia
+        Qt6::TextToSpeech
         ${CAPSULE_LIB_PATH}
         SQLite::SQLite3
     )

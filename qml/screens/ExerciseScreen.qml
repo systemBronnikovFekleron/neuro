@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtCharts 2.15
 import "../styles"
 
 Item {
@@ -18,6 +19,11 @@ Item {
     property bool isRunning: true
     property bool isPaused: false
     property int currentPhase: 0  // 0 = Подготовка, 1 = Основная, 2 = Завершение
+
+    // НОВОЕ: Снимки метрик для каждой фазы (для ResultsScreen)
+    property var baselineSnapshot: null
+    property var activeSnapshot: null
+    property var postSnapshot: null
 
     // НОВОЕ: Фазы упражнения по методике Бронникова (трехфазный сбор метрик)
     property var phases: [
@@ -56,6 +62,24 @@ Item {
         return (mins < 10 ? "0" : "") + mins + ":" + (secs < 10 ? "0" : "") + secs
     }
 
+    // НОВОЕ: Функция для создания снимка текущих метрик
+    function captureMetricsSnapshot() {
+        if (!metricsModel) return null
+
+        return {
+            "alpha": metricsModel.alpha,
+            "beta": metricsModel.beta,
+            "theta": metricsModel.theta,
+            "concentration": metricsModel.concentration,
+            "relaxation": metricsModel.relaxation,
+            "fatigue": metricsModel.fatigue,
+            "focus": metricsModel.focus,
+            "stress": metricsModel.stress,
+            "heartRate": metricsModel.heartRate,
+            "successRate": metricsModel.successRate
+        }
+    }
+
     // Таймер обновления
     Timer {
         id: exerciseTimer
@@ -73,12 +97,27 @@ Item {
             }
 
             if (elapsedSeconds >= phaseEnd && currentPhase < phases.length - 1) {
+                // НОВОЕ: Сохранить снимок метрик при завершении фазы
+                if (currentPhase === 0) {
+                    // Завершена Baseline фаза
+                    baselineSnapshot = captureMetricsSnapshot()
+                    console.log("📊 Baseline snapshot сохранен:", JSON.stringify(baselineSnapshot))
+                } else if (currentPhase === 1) {
+                    // Завершена Active фаза
+                    activeSnapshot = captureMetricsSnapshot()
+                    console.log("⚡ Active snapshot сохранен:", JSON.stringify(activeSnapshot))
+                }
+
                 currentPhase++
                 console.log("Переход в фазу:", currentPhase, phaseName)
             }
 
             // Завершение упражнения
             if (elapsedSeconds >= totalSeconds) {
+                // НОВОЕ: Сохранить Post snapshot перед завершением
+                postSnapshot = captureMetricsSnapshot()
+                console.log("📊 Post snapshot сохранен:", JSON.stringify(postSnapshot))
+
                 exerciseTimer.stop()
                 isRunning = false
                 // Автоматически перейти к результатам через 2 секунды
@@ -522,10 +561,39 @@ Item {
                             color: Theme.adaptiveTextPrimary
                             wrapMode: Text.WordWrap
                         }
+
+                        // Индикатор озвучивания
+                        Row {
+                            Layout.alignment: Qt.AlignHCenter
+                            spacing: Theme.paddingSmall
+                            visible: audioController.isSpeaking
+
+                            Rectangle {
+                                width: 10
+                                height: 10
+                                radius: 5
+                                color: Theme.accentColor
+                                anchors.verticalCenter: parent.verticalCenter
+
+                                SequentialAnimation on opacity {
+                                    running: audioController.isSpeaking
+                                    loops: Animation.Infinite
+                                    NumberAnimation { from: 1.0; to: 0.3; duration: 500 }
+                                    NumberAnimation { from: 0.3; to: 1.0; duration: 500 }
+                                }
+                            }
+
+                            Text {
+                                text: "🔊 Озвучивание..."
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.adaptiveTextSecondary
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
                     }
                 }
 
-                // График (заглушка)
+                // НОВОЕ: Real-time график Alpha/Beta/Theta
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -535,6 +603,7 @@ Item {
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: Theme.paddingMedium
+                        spacing: Theme.paddingSmall
 
                         Text {
                             text: "📈 Real-time график Alpha/Beta/Theta"
@@ -542,18 +611,84 @@ Item {
                             color: Theme.adaptiveTextPrimary
                         }
 
+                        // ВРЕМЕННАЯ ЗАГЛУШКА: ChartView вызывает крэш в Qt 6.10.1
+                        // TODO: Исправить после обновления Qt или найти workaround
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             color: Theme.backgroundColor
                             radius: Theme.radiusSmall
+                            border.color: Theme.borderColor
+                            border.width: 1
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: "График будет здесь\n(QtCharts интеграция)"
-                                font.pixelSize: Theme.fontSizeBody
-                                color: Theme.adaptiveTextSecondary
-                                horizontalAlignment: Text.AlignHCenter
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: Theme.paddingMedium
+                                spacing: Theme.paddingSmall
+
+                                // Простой текстовый график
+                                Repeater {
+                                    model: 3
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: Theme.paddingSmall
+
+                                        Text {
+                                            text: index === 0 ? "Alpha:" : index === 1 ? "Beta:" : "Theta:"
+                                            font.pixelSize: Theme.fontSizeBody
+                                            color: index === 0 ? Theme.alphaColor : index === 1 ? Theme.betaColor : Theme.thetaColor
+                                            Layout.preferredWidth: 60
+                                        }
+
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 20
+                                            radius: 10
+                                            border.color: index === 0 ? Theme.alphaColor : index === 1 ? Theme.betaColor : Theme.thetaColor
+                                            border.width: 2
+                                            color: "transparent"
+
+                                            Rectangle {
+                                                height: parent.height
+                                                radius: parent.radius
+                                                color: index === 0 ? Theme.alphaColor : index === 1 ? Theme.betaColor : Theme.thetaColor
+                                                opacity: 0.3
+                                                width: {
+                                                    if (!metricsModel) return 0
+                                                    var value = index === 0 ? metricsModel.alpha : index === 1 ? metricsModel.beta : metricsModel.theta
+                                                    return parent.width * value / 100
+                                                }
+
+                                                Behavior on width {
+                                                    NumberAnimation { duration: 200 }
+                                                }
+                                            }
+                                        }
+
+                                        Text {
+                                            text: {
+                                                if (!metricsModel) return "0%"
+                                                var value = index === 0 ? metricsModel.alpha : index === 1 ? metricsModel.beta : metricsModel.theta
+                                                return Math.round(value) + "%"
+                                            }
+                                            font.pixelSize: Theme.fontSizeBody
+                                            font.family: Theme.fontFamilyMono
+                                            color: Theme.adaptiveTextPrimary
+                                            Layout.preferredWidth: 50
+                                        }
+                                    }
+                                }
+
+                                Item { Layout.fillHeight: true }
+
+                                Text {
+                                    Layout.alignment: Qt.AlignHCenter
+                                    text: "⚠️ График временно недоступен\n(QtCharts compatibility issue)"
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    color: Theme.adaptiveTextSecondary
+                                    horizontalAlignment: Text.AlignHCenter
+                                }
                             }
                         }
                     }

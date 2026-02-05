@@ -17,6 +17,8 @@
 // Qt Controllers
 #include "controllers/DeviceController.h"
 #include "controllers/ExerciseController.h"
+#include "controllers/SettingsController.h"
+#include "controllers/AudioController.h"
 
 // C++ Business Logic
 #include "CapsuleManager.h"
@@ -104,6 +106,13 @@ int main(int argc, char *argv[])
     }
     exerciseController->setDatabase(database.get());
 
+    // Settings Controller - управление настройками приложения
+    auto settingsController = new SettingsController(&app);
+    settingsController->setDatabase(database.get());
+
+    // Audio Controller - управление звуком и голосовыми инструкциями
+    auto audioController = new AudioController(settingsController, &app);
+
     // Связь контроллеров
     QObject::connect(deviceController, &DeviceController::sessionStarted,
                      metricsModel, &MetricsModel::startMonitoring);
@@ -116,6 +125,16 @@ int main(int argc, char *argv[])
                          sessionModel->loadStageProgress();
                          sessionModel->loadRecentSessions();
                      });
+
+    // Подключение аудио обратной связи к событиям упражнения
+    QObject::connect(exerciseController, &ExerciseController::phaseChanged,
+                     audioController, &AudioController::onPhaseChanged);
+    QObject::connect(exerciseController, &ExerciseController::instructionChanged,
+                     audioController, &AudioController::onInstructionChanged);
+    QObject::connect(exerciseController, &ExerciseController::exerciseStarted,
+                     audioController, &AudioController::onExerciseStarted);
+    QObject::connect(exerciseController, &ExerciseController::exerciseCompleted,
+                     audioController, &AudioController::onExerciseCompleted);
 
     // ============================================================================
     // Регистрация моделей и контроллеров в QML контексте
@@ -131,6 +150,8 @@ int main(int argc, char *argv[])
     // Controllers
     rootContext->setContextProperty("deviceController", deviceController);
     rootContext->setContextProperty("exerciseController", exerciseController);
+    rootContext->setContextProperty("settingsController", settingsController);
+    rootContext->setContextProperty("audioController", audioController);
 
     // ============================================================================
     // Загрузка главного QML файла

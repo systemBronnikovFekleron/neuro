@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Dialogs
 import "../styles"
 
 Item {
@@ -90,7 +91,7 @@ Item {
                                 ComboBox {
                                     Layout.preferredWidth: 200
                                     model: ["Светлая", "Темная", "Авто"]
-                                    currentIndex: 0
+                                    currentIndex: settingsController ? settingsController.themeIndex : 0
 
                                     contentItem: Text {
                                         leftPadding: 12
@@ -102,8 +103,9 @@ Item {
                                     }
 
                                     onCurrentIndexChanged: {
-                                        console.log("Тема изменена на:", currentIndex)
-                                        // TODO: применить тему
+                                        if (settingsController) {
+                                            settingsController.themeIndex = currentIndex
+                                        }
                                     }
                                 }
                             }
@@ -121,7 +123,7 @@ Item {
                                 ComboBox {
                                     Layout.preferredWidth: 200
                                     model: ["Русский", "English"]
-                                    currentIndex: 0
+                                    currentIndex: settingsController ? settingsController.languageIndex : 0
 
                                     contentItem: Text {
                                         leftPadding: 12
@@ -130,6 +132,12 @@ Item {
                                         font: parent.font
                                         color: "#1a1a1a"
                                         verticalAlignment: Text.AlignVCenter
+                                    }
+
+                                    onCurrentIndexChanged: {
+                                        if (settingsController) {
+                                            settingsController.languageIndex = currentIndex
+                                        }
                                     }
                                 }
                             }
@@ -145,7 +153,12 @@ Item {
                                 }
 
                                 Switch {
-                                    checked: true
+                                    checked: settingsController ? settingsController.showHints : true
+                                    onCheckedChanged: {
+                                        if (settingsController) {
+                                            settingsController.showHints = checked
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -181,7 +194,12 @@ Item {
                                 }
 
                                 Switch {
-                                    checked: true
+                                    checked: settingsController ? settingsController.autoConnect : true
+                                    onCheckedChanged: {
+                                        if (settingsController) {
+                                            settingsController.autoConnect = checked
+                                        }
+                                    }
                                 }
                             }
 
@@ -197,11 +215,12 @@ Item {
 
                                 Switch {
                                     id: demoModeSwitch
-                                    checked: false
+                                    checked: settingsController ? settingsController.demoMode : false
 
                                     onCheckedChanged: {
-                                        console.log("Демо-режим:", checked ? "включен" : "выключен")
-                                        // TODO: переключить режим в DeviceController
+                                        if (settingsController) {
+                                            settingsController.demoMode = checked
+                                        }
                                     }
                                 }
                             }
@@ -217,7 +236,9 @@ Item {
                                 }
 
                                 Text {
-                                    text: "NeiryBand #1234"  // TODO: из DeviceController
+                                    text: settingsController && settingsController.lastDevice ?
+                                          settingsController.lastDevice :
+                                          "Не подключено"
                                     font.pixelSize: Theme.fontSizeBody
                                     color: "#1a1a1a"
                                 }
@@ -257,11 +278,17 @@ Item {
                                 SpinBox {
                                     from: 5
                                     to: 60
-                                    value: 10
+                                    value: settingsController ? settingsController.defaultDuration : 10
                                     stepSize: 5
 
                                     textFromValue: function(value) {
                                         return value + " мин"
+                                    }
+
+                                    onValueChanged: {
+                                        if (settingsController) {
+                                            settingsController.defaultDuration = value
+                                        }
                                     }
                                 }
                             }
@@ -277,7 +304,12 @@ Item {
                                 }
 
                                 Switch {
-                                    checked: true
+                                    checked: settingsController ? settingsController.soundSignals : true
+                                    onCheckedChanged: {
+                                        if (settingsController) {
+                                            settingsController.soundSignals = checked
+                                        }
+                                    }
                                 }
                             }
 
@@ -292,7 +324,88 @@ Item {
                                 }
 
                                 Switch {
-                                    checked: false
+                                    checked: settingsController ? settingsController.voiceInstructions : false
+                                    onCheckedChanged: {
+                                        if (settingsController) {
+                                            settingsController.voiceInstructions = checked
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Громкость звуков
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: Theme.paddingSmall
+
+                                Text {
+                                    text: "Громкость звуков:"
+                                    font.pixelSize: Theme.fontSizeBody
+                                    color: "#666666"
+                                }
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: Theme.paddingMedium
+
+                                    Slider {
+                                        Layout.fillWidth: true
+                                        from: 0.0
+                                        to: 1.0
+                                        value: audioController ? audioController.volume : 0.7
+                                        enabled: settingsController ? settingsController.soundSignals : true
+
+                                        onValueChanged: {
+                                            if (audioController) {
+                                                audioController.volume = value
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        text: Math.round((audioController ? audioController.volume : 0.7) * 100) + "%"
+                                        font.pixelSize: Theme.fontSizeSmall
+                                        color: "#999999"
+                                        Layout.preferredWidth: 40
+                                    }
+                                }
+                            }
+
+                            // Скорость речи
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: Theme.paddingSmall
+
+                                Text {
+                                    text: "Скорость речи:"
+                                    font.pixelSize: Theme.fontSizeBody
+                                    color: "#666666"
+                                }
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: Theme.paddingMedium
+
+                                    Slider {
+                                        Layout.fillWidth: true
+                                        from: 0.5
+                                        to: 2.0
+                                        value: audioController ? audioController.rate : 1.0
+                                        enabled: settingsController ? settingsController.voiceInstructions : false
+
+                                        onValueChanged: {
+                                            if (audioController) {
+                                                audioController.rate = value
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        text: (audioController ? audioController.rate : 1.0).toFixed(1) + "x"
+                                        font.pixelSize: Theme.fontSizeSmall
+                                        color: "#999999"
+                                        Layout.preferredWidth: 40
+                                    }
                                 }
                             }
                         }
@@ -301,7 +414,7 @@ Item {
                     // Настройки данных
                     Rectangle {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 150
+                        Layout.preferredHeight: 200
                         color: Theme.surfaceColor
                         radius: Theme.radiusMedium
 
@@ -328,7 +441,36 @@ Item {
                                 }
 
                                 Switch {
-                                    checked: true
+                                    checked: settingsController ? settingsController.autosaveCSV : true
+                                    onCheckedChanged: {
+                                        if (settingsController) {
+                                            settingsController.autosaveCSV = checked
+                                        }
+                                    }
+                                }
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+
+                                Text {
+                                    text: "Research Mode (raw EEG/PPG/MEMS):"
+                                    font.pixelSize: Theme.fontSizeBody
+                                    color: "#666666"
+                                    Layout.preferredWidth: 220
+                                }
+
+                                Switch {
+                                    id: researchModeSwitch
+                                    checked: settingsController ? settingsController.researchMode : false
+                                    onCheckedChanged: {
+                                        if (checked && settingsController && settingsController.researchMode !== checked) {
+                                            // Показываем предупреждение при включении
+                                            researchModeWarningDialog.open()
+                                        } else if (settingsController) {
+                                            settingsController.researchMode = checked
+                                        }
+                                    }
                                 }
                             }
 
@@ -355,8 +497,9 @@ Item {
                                     }
 
                                     onClicked: {
-                                        console.log("Экспорт данных...")
-                                        // TODO: экспорт в CSV
+                                        if (settingsController) {
+                                            settingsController.exportAllData("default")
+                                        }
                                     }
                                 }
 
@@ -379,8 +522,7 @@ Item {
                                     }
 
                                     onClicked: {
-                                        console.log("Очистка истории...")
-                                        // TODO: показать подтверждение и очистить БД
+                                        confirmDialog.open()
                                     }
                                 }
                             }
@@ -432,6 +574,84 @@ Item {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // Диалог предупреждения о Research Mode
+    Dialog {
+        id: researchModeWarningDialog
+        title: "⚠️ Research Mode"
+        modal: true
+        anchors.centerIn: parent
+        width: 500
+        standardButtons: Dialog.Ok | Dialog.Cancel
+
+        contentItem: ColumnLayout {
+            spacing: 10
+
+            Text {
+                text: "Research Mode включает экспорт RAW EEG/PPG/MEMS данных."
+                font.pixelSize: Theme.fontSizeBody
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+            }
+
+            Text {
+                text: "⚠️ ВНИМАНИЕ:"
+                font.pixelSize: Theme.fontSizeBody
+                font.weight: Theme.fontWeightBold
+                color: Theme.errorColor
+            }
+
+            Text {
+                text: "• Будут создаваться 3 дополнительных CSV файла на сессию\n" +
+                      "• Размер файлов может достигать 10-50 МБ каждый\n" +
+                      "• Используйте только для исследовательских целей\n" +
+                      "• Данные сохраняются в data/Users/[user]/research/"
+                font.pixelSize: Theme.fontSizeSmall
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                color: "#666666"
+            }
+
+            Text {
+                text: "Вы уверены, что хотите включить Research Mode?"
+                font.pixelSize: Theme.fontSizeBody
+                font.weight: Theme.fontWeightMedium
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+            }
+        }
+
+        onAccepted: {
+            if (settingsController) {
+                settingsController.researchMode = true
+            }
+        }
+
+        onRejected: {
+            researchModeSwitch.checked = false
+        }
+    }
+
+    // Диалог подтверждения очистки истории
+    Dialog {
+        id: confirmDialog
+        title: "Подтверждение"
+        modal: true
+        anchors.centerIn: parent
+        width: 400
+        standardButtons: Dialog.Yes | Dialog.No
+
+        contentItem: Text {
+            text: "Вы уверены, что хотите очистить историю сессий?\n\nБудут удалены сессии старше 7 дней."
+            wrapMode: Text.WordWrap
+        }
+
+        onAccepted: {
+            if (settingsController) {
+                settingsController.clearHistory("default")
             }
         }
     }
