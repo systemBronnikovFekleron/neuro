@@ -347,6 +347,19 @@ The preparation screen provides UI for duration selection:
 - Accessible in QML as property: `sessionModel.practiceLevel`
 - Can be updated in Settings screen
 
+**Multi-User Support:**
+- Users can be created and switched in ProfileScreen
+- Calibration data (IAF, IAPF) saved per user to database
+- Baseline metrics persist between sessions per user
+- Session records include `user_id` for proper attribution
+- ExerciseController syncs with SessionModel for correct user tracking:
+  ```cpp
+  QObject::connect(sessionModel, &SessionModel::userProfileChanged,
+                   exerciseController, [exerciseController, sessionModel]() {
+                       exerciseController->setCurrentUserId(sessionModel->currentUserId());
+                   });
+  ```
+
 **Best Practices:**
 - Beginners should start with 1-2 min to avoid fatigue
 - Increase duration gradually as comfort improves
@@ -379,6 +392,42 @@ When modifying stage assignments, update:
 1. `m_stage` value in exercise constructor
 2. CMakeLists.txt comments for correct stage section
 3. ExerciseLibrary if stage counts change
+
+### Qt/QML UI Gotchas
+
+**UI Freezing During Device Operations:**
+
+Blocking loops with `QThread::msleep()` in Qt controllers block the event loop and freeze UI. Always add `QCoreApplication::processEvents()` in waiting loops:
+
+```cpp
+#include <QCoreApplication>
+
+// In DeviceController::startSession() and similar methods
+for (int i = 0; i < 50 && !m_sessionManager->isActive(); ++i) {
+    m_capsuleManager->update();
+    QCoreApplication::processEvents();  // Keep UI responsive
+    QThread::msleep(50);
+}
+```
+
+**QML Connections with Optional Signals:**
+
+When using QML `Connections` that may connect to targets without certain signals, use `ignoreUnknownSignals`:
+
+```qml
+Connections {
+    target: screenLoader.item
+    ignoreUnknownSignals: true  // Prevents warnings for missing signals
+    function onStartDemo() { /* ... */ }
+}
+```
+
+**System Fonts:**
+
+Use platform-specific system fonts instead of custom fonts to avoid warnings:
+```qml
+readonly property string fontFamilyMono: Qt.platform.os === "osx" ? "Menlo" : "Consolas"
+```
 
 ### CapsuleAPI Integration Gotchas
 
