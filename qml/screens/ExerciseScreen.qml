@@ -1,8 +1,8 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import QtCharts 2.15
 import "../styles"
+import "../components"
 
 Item {
     id: exerciseScreen
@@ -10,12 +10,23 @@ Item {
     signal exerciseCompleted()
     signal back()
 
+    // Имя упражнения (передается из PreparationScreen)
+    property string exerciseName: ""
+
     // ДОБАВЛЕНО: Связь с моделью метрик
     property var metricsModel: mainWindow ? mainWindow.appMetricsModel : null
 
+    // Остановка упражнения при уходе с экрана
+    Component.onDestruction: {
+        if (exerciseController && exerciseController.isActive) {
+            exerciseController.stopExercise()
+        }
+    }
+
     // Состояние упражнения
     property int elapsedSeconds: 0
-    property int totalSeconds: 600  // 10 минут по умолчанию
+    // ИСПРАВЛЕНО: Берём длительность из exerciseController (в минутах -> секунды)
+    property int totalSeconds: exerciseController ? exerciseController.duration * 60 : 300
     property bool isRunning: true
     property bool isPaused: false
     property int currentPhase: 0  // 0 = Подготовка, 1 = Основная, 2 = Завершение
@@ -25,11 +36,16 @@ Item {
     property var activeSnapshot: null
     property var postSnapshot: null
 
-    // НОВОЕ: Фазы упражнения по методике Бронникова (трехфазный сбор метрик)
+    // ИСПРАВЛЕНО: Фазы рассчитываются динамически на основе totalSeconds
+    // Baseline и Post по 30 сек, остальное - практика
+    property int baselineDuration: 30
+    property int postDuration: 30
+    property int practiceDuration: Math.max(totalSeconds - baselineDuration - postDuration, 60)
+
     property var phases: [
-        { name: "📊 Baseline", description: "Запись базовых метрик", duration: 30, icon: "📊", color: Theme.infoColor },
-        { name: "⚡ Практика", description: "Основное выполнение", duration: 540, icon: "⚡", color: Theme.primaryColor },
-        { name: "📊 Post", description: "Запись финальных метрик", duration: 30, icon: "📊", color: Theme.successColor }
+        { name: "📊 Baseline", description: "Запись базовых метрик", duration: baselineDuration, icon: "📊", color: Theme.infoColor },
+        { name: "⚡ Практика", description: "Основное выполнение", duration: practiceDuration, icon: "⚡", color: Theme.primaryColor },
+        { name: "📊 Post", description: "Запись финальных метрик", duration: postDuration, icon: "📊", color: Theme.successColor }
     ]
 
     // Инструкции для каждой фазы
@@ -138,6 +154,11 @@ Item {
     }
 
     Component.onCompleted: {
+        // Запуск упражнения через ExerciseController
+        if (exerciseName && exerciseController) {
+            console.log("[ExerciseScreen] Запуск упражнения:", exerciseName)
+            exerciseController.startExercise(exerciseName)
+        }
         console.log("ExerciseScreen запущен. Длительность:", totalSeconds, "сек")
         exerciseTimer.start()
     }
@@ -166,7 +187,7 @@ Item {
                     // Название упражнения
                     Text {
                         Layout.fillWidth: true
-                        text: "⚡ Энергетический шар"
+                        text: exerciseScreen.exerciseName || "Упражнение"
                         font.pixelSize: Theme.fontSizeHeading2
                         font.weight: Theme.fontWeightBold
                         color: Theme.adaptiveTextPrimary
@@ -392,15 +413,18 @@ Item {
                         Text {
                             text: "Alpha"
                             color: Theme.adaptiveTextSecondary
+                            font.pixelSize: Theme.fontSizeSmall
                         }
-                        ProgressBar {
+                        MetricsProgressBar {
                             Layout.fillWidth: true
                             from: 0; to: 100
                             value: metricsModel ? metricsModel.alpha : 0
+                            customColor: Theme.alphaColor
                         }
                         Text {
                             text: metricsModel ? Math.round(metricsModel.alpha) + "%" : "0%"
                             font.family: Theme.fontFamilyMono
+                            font.pixelSize: Theme.fontSizeSmall
                             color: Theme.alphaColor
                         }
 
@@ -408,15 +432,18 @@ Item {
                         Text {
                             text: "Beta"
                             color: Theme.adaptiveTextSecondary
+                            font.pixelSize: Theme.fontSizeSmall
                         }
-                        ProgressBar {
+                        MetricsProgressBar {
                             Layout.fillWidth: true
                             from: 0; to: 100
                             value: metricsModel ? metricsModel.beta : 0
+                            customColor: Theme.betaColor
                         }
                         Text {
                             text: metricsModel ? Math.round(metricsModel.beta) + "%" : "0%"
                             font.family: Theme.fontFamilyMono
+                            font.pixelSize: Theme.fontSizeSmall
                             color: Theme.betaColor
                         }
 
@@ -424,49 +451,58 @@ Item {
                         Text {
                             text: "Theta"
                             color: Theme.adaptiveTextSecondary
+                            font.pixelSize: Theme.fontSizeSmall
                         }
-                        ProgressBar {
+                        MetricsProgressBar {
                             Layout.fillWidth: true
                             from: 0; to: 100
                             value: metricsModel ? metricsModel.theta : 0
+                            customColor: Theme.thetaColor
                         }
                         Text {
                             text: metricsModel ? Math.round(metricsModel.theta) + "%" : "0%"
                             font.family: Theme.fontFamilyMono
+                            font.pixelSize: Theme.fontSizeSmall
                             color: Theme.thetaColor
                         }
 
                         Item { height: Theme.paddingSmall; Layout.columnSpan: 3 }
 
-                        // Concentration
+                        // Concentration (с цветовыми зонами)
                         Text {
                             text: "Концентрация"
                             color: Theme.adaptiveTextSecondary
+                            font.pixelSize: Theme.fontSizeSmall
                         }
-                        ProgressBar {
+                        MetricsProgressBar {
                             Layout.fillWidth: true
                             from: 0; to: 100
                             value: metricsModel ? metricsModel.concentration : 0
+                            // Без customColor - используются автоматические цветовые зоны
                         }
                         Text {
                             text: metricsModel ? Math.round(metricsModel.concentration) + "%" : "0%"
                             font.family: Theme.fontFamilyMono
+                            font.pixelSize: Theme.fontSizeSmall
                             color: Theme.concentrationColor
                         }
 
-                        // Relaxation
+                        // Relaxation (с цветовыми зонами)
                         Text {
                             text: "Релаксация"
                             color: Theme.adaptiveTextSecondary
+                            font.pixelSize: Theme.fontSizeSmall
                         }
-                        ProgressBar {
+                        MetricsProgressBar {
                             Layout.fillWidth: true
                             from: 0; to: 100
                             value: metricsModel ? metricsModel.relaxation : 0
+                            // Без customColor - используются автоматические цветовые зоны
                         }
                         Text {
                             text: metricsModel ? Math.round(metricsModel.relaxation) + "%" : "0%"
                             font.family: Theme.fontFamilyMono
+                            font.pixelSize: Theme.fontSizeSmall
                             color: Theme.relaxationColor
                         }
 
@@ -474,9 +510,9 @@ Item {
 
                         // Heart Rate
                         Text {
-                            text: "❤️ Пульс"
+                            text: "Пульс"
                             color: Theme.adaptiveTextSecondary
-                            font.pixelSize: Theme.fontSizeBody
+                            font.pixelSize: Theme.fontSizeSmall
                         }
                         Item { Layout.fillWidth: true }
                         Text {
@@ -486,21 +522,29 @@ Item {
                             color: Theme.heartRateColor
                         }
 
-                        // Success Rate
+                        // Success Rate (с цветовыми зонами)
                         Text {
                             text: "Success Rate"
                             color: Theme.adaptiveTextSecondary
+                            font.pixelSize: Theme.fontSizeSmall
                         }
-                        ProgressBar {
+                        MetricsProgressBar {
                             Layout.fillWidth: true
                             from: 0; to: 100
                             value: metricsModel ? metricsModel.successRate : 0
+                            // Без customColor - используются автоматические цветовые зоны
                         }
                         Text {
                             text: metricsModel ? Math.round(metricsModel.successRate) + "%" : "0%"
                             font.family: Theme.fontFamilyMono
                             font.weight: Theme.fontWeightBold
-                            color: Theme.successColor
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: {
+                                var rate = metricsModel ? metricsModel.successRate : 0
+                                if (rate >= 70) return Theme.successColor
+                                else if (rate >= 40) return Theme.warningColor
+                                else return Theme.errorColor
+                            }
                         }
                     }
                 }
@@ -593,7 +637,7 @@ Item {
                     }
                 }
 
-                // НОВОЕ: Real-time график Alpha/Beta/Theta
+                // Real-time график Alpha/Beta/Theta (Canvas-based)
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -606,90 +650,19 @@ Item {
                         spacing: Theme.paddingSmall
 
                         Text {
-                            text: "📈 Real-time график Alpha/Beta/Theta"
+                            text: "Real-time Alpha/Beta/Theta"
                             font.pixelSize: Theme.fontSizeHeading3
+                            font.weight: Theme.fontWeightMedium
                             color: Theme.adaptiveTextPrimary
                         }
 
-                        // ВРЕМЕННАЯ ЗАГЛУШКА: ChartView вызывает крэш в Qt 6.10.1
-                        // TODO: Исправить после обновления Qt или найти workaround
-                        Rectangle {
+                        // Canvas-based график (замена QtCharts)
+                        LineChart {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            color: Theme.backgroundColor
-                            radius: Theme.radiusSmall
-                            border.color: Theme.borderColor
-                            border.width: 1
-
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: Theme.paddingMedium
-                                spacing: Theme.paddingSmall
-
-                                // Простой текстовый график
-                                Repeater {
-                                    model: 3
-
-                                    RowLayout {
-                                        Layout.fillWidth: true
-                                        spacing: Theme.paddingSmall
-
-                                        Text {
-                                            text: index === 0 ? "Alpha:" : index === 1 ? "Beta:" : "Theta:"
-                                            font.pixelSize: Theme.fontSizeBody
-                                            color: index === 0 ? Theme.alphaColor : index === 1 ? Theme.betaColor : Theme.thetaColor
-                                            Layout.preferredWidth: 60
-                                        }
-
-                                        Rectangle {
-                                            Layout.fillWidth: true
-                                            height: 20
-                                            radius: 10
-                                            border.color: index === 0 ? Theme.alphaColor : index === 1 ? Theme.betaColor : Theme.thetaColor
-                                            border.width: 2
-                                            color: "transparent"
-
-                                            Rectangle {
-                                                height: parent.height
-                                                radius: parent.radius
-                                                color: index === 0 ? Theme.alphaColor : index === 1 ? Theme.betaColor : Theme.thetaColor
-                                                opacity: 0.3
-                                                width: {
-                                                    if (!metricsModel) return 0
-                                                    var value = index === 0 ? metricsModel.alpha : index === 1 ? metricsModel.beta : metricsModel.theta
-                                                    return parent.width * value / 100
-                                                }
-
-                                                Behavior on width {
-                                                    NumberAnimation { duration: 200 }
-                                                }
-                                            }
-                                        }
-
-                                        Text {
-                                            text: {
-                                                if (!metricsModel) return "0%"
-                                                var value = index === 0 ? metricsModel.alpha : index === 1 ? metricsModel.beta : metricsModel.theta
-                                                return Math.round(value) + "%"
-                                            }
-                                            font.pixelSize: Theme.fontSizeBody
-                                            font.family: Theme.fontFamilyMono
-                                            color: Theme.adaptiveTextPrimary
-                                            Layout.preferredWidth: 50
-                                        }
-                                    }
-                                }
-
-                                Item { Layout.fillHeight: true }
-
-                                Text {
-                                    Layout.alignment: Qt.AlignHCenter
-                                    text: "⚠️ График временно недоступен\n(QtCharts compatibility issue)"
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.adaptiveTextSecondary
-                                    horizontalAlignment: Text.AlignHCenter
-                                }
-                            }
+                            alphaHistory: metricsModel ? metricsModel.alphaHistory : []
+                            betaHistory: metricsModel ? metricsModel.betaHistory : []
+                            thetaHistory: metricsModel ? metricsModel.thetaHistory : []
                         }
                     }
                 }

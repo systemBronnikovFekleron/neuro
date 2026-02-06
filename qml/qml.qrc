@@ -19,6 +19,8 @@
         <file>components/MetricsPanel.qml</file>
         <file>components/CustomProgressBar.qml</file>
         <file>components/StageSelector.qml</file>
+        <file>components/LineChart.qml</file>
+        <file>components/MetricsProgressBar.qml</file>
         <file>components/qmldir</file>
 
         <!-- Styles -->
@@ -28,9 +30,9 @@
 
     <!-- Sound Effects -->
     <qresource prefix="/sounds">
-        <file>../assets/sounds/phase_change.wav</file>
-        <file>../assets/sounds/success.wav</file>
-        <file>../assets/sounds/exercise_start.wav</file>
-        <file>../assets/sounds/exercise_complete.wav</file>
+        <file alias="phase_change.wav">../assets/sounds/phase_change.wav</file>
+        <file alias="success.wav">../assets/sounds/success.wav</file>
+        <file alias="exercise_start.wav">../assets/sounds/exercise_start.wav</file>
+        <file alias="exercise_complete.wav">../assets/sounds/exercise_complete.wav</file>
     </qresource>
 </RCC>
