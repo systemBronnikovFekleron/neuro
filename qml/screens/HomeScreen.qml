@@ -267,13 +267,26 @@ Item {
                                     color: Theme.adaptiveTextSecondary
                                 }
 
-                                // Рекомендация для первого
+                                // Рекомендация для первого или лучший результат
                                 Text {
                                     Layout.alignment: Qt.AlignHCenter
-                                    text: index === 0 ? "⭐ Начните здесь" : ""
+                                    text: {
+                                        if (model.bestSuccessRate > 0) {
+                                            return (model.isCompleted === true ? "✓ " : "") + model.bestSuccessRate.toFixed(0) + "%"
+                                        } else if (index === 0) {
+                                            return "⭐ Начните здесь"
+                                        }
+                                        return ""
+                                    }
                                     font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.successColor
-                                    visible: index === 0
+                                    font.bold: model.isCompleted === true
+                                    color: {
+                                        if (model.bestSuccessRate > 0) {
+                                            return model.bestSuccessRate >= 70 ? Theme.successColor : Theme.warningColor
+                                        }
+                                        return Theme.successColor
+                                    }
+                                    visible: model.bestSuccessRate > 0 || index === 0
                                 }
                             }
 

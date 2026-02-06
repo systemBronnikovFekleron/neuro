@@ -96,6 +96,12 @@ public:
     Q_INVOKABLE void updateCalibration(double iaf, double iapf);
     Q_INVOKABLE void updateBaseline(const QVariantMap& baselineMetrics);
 
+    // User management methods
+    Q_INVOKABLE QStringList getAllUsers();
+    Q_INVOKABLE bool createUser(const QString& userId, const QString& userName = "");
+    Q_INVOKABLE void switchUser(const QString& userId);
+    Q_INVOKABLE QString currentUserId() const { return m_currentUserId; }
+
 signals:
     void statisticsChanged();
     void stageProgressChanged();
@@ -126,6 +132,7 @@ private:
     std::vector<QVariantMap> m_recentSessionsData;
 
     // User profile data
+    QString m_currentUserId = "default";  // Текущий пользователь
     QString m_userName;
     int m_practiceLevel = 0;  // 0=Beginner, 1=Intermediate, 2=Expert
     QString m_lastCalibrationDate;

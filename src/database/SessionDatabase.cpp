@@ -794,4 +794,30 @@ std::vector<StageStats> SessionDatabase::getAllStagesProgress(const std::string&
     return all_progress;
 }
 
+std::vector<std::string> SessionDatabase::getAllUserIds() {
+    std::vector<std::string> users;
+
+    if (!m_db) return users;
+
+    const char* query = "SELECT user_id FROM users ORDER BY created_at";
+    sqlite3_stmt* stmt = nullptr;
+
+    if (sqlite3_prepare_v2(m_db, query, -1, &stmt, nullptr) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const char* user_id = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+            if (user_id) {
+                users.push_back(user_id);
+            }
+        }
+        sqlite3_finalize(stmt);
+    }
+
+    // Если список пустой, добавляем default
+    if (users.empty()) {
+        users.push_back("default");
+    }
+
+    return users;
+}
+
 } // namespace Bronnikov

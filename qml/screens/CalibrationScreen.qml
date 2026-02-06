@@ -16,6 +16,24 @@ Item {
     property int remainingSeconds: 90
     property bool isCalibrating: deviceController ? deviceController.isCalibrating : false
     property int progress: deviceController ? deviceController.calibrationProgress : 0
+    property bool calibrationSuccessful: false
+    property string errorMessage: ""
+
+    // Таймер для запуска калибровки после старта сессии
+    Timer {
+        id: delayedCalibrationTimer
+        interval: 2000  // 2 секунды на запуск сессии
+        repeat: false
+        onTriggered: {
+            if (deviceController && deviceController.isSessionActive) {
+                console.log("Сессия активна, запуск калибровки...")
+                deviceController.startCalibration()
+            } else {
+                console.log("Сессия всё ещё не активна")
+                calibrationScreen.errorMessage = "Не удалось запустить сессию"
+            }
+        }
+    }
 
     Connections {
         target: deviceController
@@ -31,12 +49,14 @@ Item {
 
         function onCalibrationCompleted(iaf, iapf) {
             console.log("✓ Калибровка завершена! IAF:", iaf, "IAPF:", iapf)
-            calibrationScreen.calibrationCompleted()
+            calibrationScreen.calibrationSuccessful = true
+            calibrationScreen.errorMessage = ""
         }
 
         function onCalibrationFailed(error) {
             console.log("❌ Калибровка не удалась:", error)
-            calibrationScreen.calibrationCancelled()
+            // НЕ выходим автоматически - показываем ошибку
+            calibrationScreen.errorMessage = error
         }
     }
 
@@ -86,6 +106,23 @@ Item {
                         wrapMode: Text.WordWrap
                         lineHeight: 1.4  // УМЕНЬШЕНО с 1.5 до 1.4 для компактности
                     }
+                }
+            }
+
+            // Сообщение об ошибке
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 60
+                color: Theme.errorColor
+                radius: Theme.radiusMedium
+                visible: calibrationScreen.errorMessage !== ""
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "❌ " + calibrationScreen.errorMessage
+                    font.pixelSize: Theme.fontSizeBody
+                    color: "white"
+                    wrapMode: Text.WordWrap
                 }
             }
 
@@ -142,7 +179,7 @@ Item {
                 Layout.preferredHeight: 100
                 color: Theme.surfaceColor
                 radius: Theme.radiusMedium
-                visible: !calibrationScreen.isCalibrating && deviceController && deviceController.iaf > 0
+                visible: !calibrationScreen.isCalibrating && calibrationScreen.calibrationSuccessful
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -222,15 +259,26 @@ Item {
 
                     onClicked: {
                         if (deviceController) {
-                            console.log("Запуск калибровки...")
-                            deviceController.startCalibration()
+                            calibrationScreen.errorMessage = ""  // Очищаем предыдущую ошибку
+
+                            // Проверяем, активна ли сессия
+                            if (!deviceController.isSessionActive) {
+                                console.log("Сессия не активна, запускаем...")
+                                deviceController.startSession()
+
+                                // Даем время на запуск сессии и запускаем калибровку с задержкой
+                                delayedCalibrationTimer.start()
+                            } else {
+                                console.log("Запуск калибровки...")
+                                deviceController.startCalibration()
+                            }
                         }
                     }
                 }
 
                 Button {
                     text: "✓ Продолжить"
-                    visible: !calibrationScreen.isCalibrating && deviceController && deviceController.iaf > 0
+                    visible: !calibrationScreen.isCalibrating && calibrationScreen.calibrationSuccessful
 
                     background: Rectangle {
                         color: parent.down ? Qt.darker(Theme.primaryColor, 1.1) :

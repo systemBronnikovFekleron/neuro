@@ -151,6 +151,7 @@ private:
     AsyncOperation m_currentOperation = AsyncOperation::None;
     int m_operationStep = 0;  // Счетчик шагов текущей операции
     QString m_targetDeviceId;  // ID устройства для подключения
+    bool m_wantAutoConnect = false;  // Флаг: подключиться к первому найденному устройству
 
     // Internal helpers
     void updateConnectionStatus();

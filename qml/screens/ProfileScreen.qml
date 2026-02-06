@@ -70,6 +70,83 @@ Item {
                     width: parent.width
                     spacing: Theme.paddingMedium
 
+                    // Управление пользователями
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 100
+                        color: Theme.surfaceColor
+                        radius: Theme.radiusMedium
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: Theme.paddingMedium
+                            spacing: Theme.paddingSmall
+
+                            Text {
+                                text: "👥 Управление пользователями"
+                                font.pixelSize: Theme.fontSizeHeading3
+                                font.weight: Theme.fontWeightMedium
+                                color: Theme.adaptiveTextPrimary
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: Theme.paddingMedium
+
+                                Text {
+                                    text: "Текущий:"
+                                    font.pixelSize: Theme.fontSizeBody
+                                    color: Theme.adaptiveTextSecondary
+                                }
+
+                                ComboBox {
+                                    id: userComboBox
+                                    Layout.preferredWidth: 200
+
+                                    model: sessionModel ? sessionModel.getAllUsers() : ["default"]
+
+                                    Component.onCompleted: {
+                                        if (sessionModel) {
+                                            var users = sessionModel.getAllUsers()
+                                            var currentIdx = users.indexOf(sessionModel.currentUserId())
+                                            if (currentIdx >= 0) {
+                                                currentIndex = currentIdx
+                                            }
+                                        }
+                                    }
+
+                                    onActivated: function(index) {
+                                        if (sessionModel && index >= 0) {
+                                            var userId = model[index]
+                                            sessionModel.switchUser(userId)
+                                        }
+                                    }
+                                }
+
+                                Button {
+                                    text: "➕ Новый"
+
+                                    background: Rectangle {
+                                        color: parent.down ? Qt.darker(Theme.successColor, 1.1) :
+                                               parent.hovered ? Qt.lighter(Theme.successColor, 1.1) :
+                                               Theme.successColor
+                                        radius: Theme.radiusSmall
+                                    }
+
+                                    contentItem: Text {
+                                        text: parent.text
+                                        font: parent.font
+                                        color: "white"
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+
+                                    onClicked: newUserDialog.open()
+                                }
+                            }
+                        }
+                    }
+
                     // Информация о пользователе
                     Rectangle {
                         Layout.fillWidth: true
@@ -260,35 +337,66 @@ Item {
 
                             Item { Layout.fillHeight: true }
 
-                            Button {
+                            RowLayout {
                                 Layout.alignment: Qt.AlignHCenter
-                                text: "🔄 Повторить калибровку"
+                                spacing: Theme.paddingMedium
 
-                                background: Rectangle {
-                                    color: parent.down ? Qt.darker(Theme.infoColor, 1.1) :
-                                           parent.hovered ? Qt.lighter(Theme.infoColor, 1.1) :
-                                           Theme.infoColor
-                                    radius: Theme.radiusSmall
-                                }
+                                Button {
+                                    text: deviceController && deviceController.isSessionActive ?
+                                          "🔄 Повторить калибровку" :
+                                          (deviceController && deviceController.isConnected ?
+                                           "▶️ Запустить сессию" : "📡 Подключить устройство")
 
-                                contentItem: Text {
-                                    text: parent.text
-                                    font: parent.font
-                                    color: "white"
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                }
+                                    background: Rectangle {
+                                        color: parent.down ? Qt.darker(Theme.infoColor, 1.1) :
+                                               parent.hovered ? Qt.lighter(Theme.infoColor, 1.1) :
+                                               Theme.infoColor
+                                        radius: Theme.radiusSmall
+                                    }
 
-                                onClicked: {
-                                    if (deviceController) {
-                                        deviceController.startCalibration()
-                                    } else {
-                                        console.log("DeviceController не доступен")
+                                    contentItem: Text {
+                                        text: parent.text
+                                        font: parent.font
+                                        color: "white"
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+
+                                    onClicked: {
+                                        if (!deviceController) {
+                                            console.log("DeviceController не доступен")
+                                            return
+                                        }
+
+                                        if (deviceController.isSessionActive) {
+                                            // Запускаем калибровку
+                                            deviceController.startCalibration()
+                                        } else if (deviceController.isConnected) {
+                                            // Запускаем сессию
+                                            deviceController.startSession()
+                                        } else {
+                                            // Ищем устройства
+                                            deviceController.discoverDevices()
+                                        }
                                     }
                                 }
 
-                                // Кнопка доступна только когда есть активная сессия
-                                enabled: deviceController && deviceController.isSessionActive
+                                // Статус подключения
+                                Text {
+                                    text: {
+                                        if (!deviceController) return "❓"
+                                        if (deviceController.isSessionActive) return "✓ Сессия активна"
+                                        if (deviceController.isConnected) return "✓ Подключено"
+                                        return "⚠ Не подключено"
+                                    }
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    color: {
+                                        if (!deviceController) return Theme.adaptiveTextSecondary
+                                        if (deviceController.isSessionActive) return Theme.successColor
+                                        if (deviceController.isConnected) return Theme.warningColor
+                                        return Theme.errorColor
+                                    }
+                                }
                             }
                         }
                     }
@@ -352,6 +460,108 @@ Item {
                                         }
                                     }
                                 }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Диалог создания нового пользователя
+    Dialog {
+        id: newUserDialog
+        title: "Новый пользователь"
+        modal: true
+        anchors.centerIn: parent
+        width: 350
+
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: Theme.paddingMedium
+
+            Text {
+                text: "Введите ID и имя нового пользователя:"
+                font.pixelSize: Theme.fontSizeBody
+                color: Theme.adaptiveTextPrimary
+            }
+
+            TextField {
+                id: newUserIdField
+                Layout.fillWidth: true
+                placeholderText: "ID пользователя (латиница)"
+                validator: RegularExpressionValidator { regularExpression: /[a-zA-Z0-9_]+/ }
+            }
+
+            TextField {
+                id: newUserNameField
+                Layout.fillWidth: true
+                placeholderText: "Имя пользователя"
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.paddingMedium
+
+                Button {
+                    Layout.fillWidth: true
+                    text: "Отмена"
+
+                    background: Rectangle {
+                        color: parent.down ? Qt.darker(Theme.textDisabled, 1.1) :
+                               parent.hovered ? Qt.lighter(Theme.textDisabled, 1.1) :
+                               Theme.textDisabled
+                        radius: Theme.radiusSmall
+                    }
+
+                    contentItem: Text {
+                        text: parent.text
+                        font: parent.font
+                        color: Theme.textPrimary
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    onClicked: newUserDialog.close()
+                }
+
+                Button {
+                    Layout.fillWidth: true
+                    text: "Создать"
+                    enabled: newUserIdField.text.length > 0
+
+                    background: Rectangle {
+                        color: parent.enabled ?
+                               (parent.down ? Qt.darker(Theme.successColor, 1.1) :
+                                parent.hovered ? Qt.lighter(Theme.successColor, 1.1) :
+                                Theme.successColor) :
+                               Theme.textDisabled
+                        radius: Theme.radiusSmall
+                    }
+
+                    contentItem: Text {
+                        text: parent.text
+                        font: parent.font
+                        color: "white"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    onClicked: {
+                        if (sessionModel && newUserIdField.text.length > 0) {
+                            var success = sessionModel.createUser(newUserIdField.text, newUserNameField.text)
+                            if (success) {
+                                sessionModel.switchUser(newUserIdField.text)
+                                // Обновляем список пользователей в ComboBox
+                                userComboBox.model = sessionModel.getAllUsers()
+                                var users = sessionModel.getAllUsers()
+                                var idx = users.indexOf(newUserIdField.text)
+                                if (idx >= 0) {
+                                    userComboBox.currentIndex = idx
+                                }
+                                newUserIdField.text = ""
+                                newUserNameField.text = ""
+                                newUserDialog.close()
                             }
                         }
                     }

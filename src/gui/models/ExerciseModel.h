@@ -11,6 +11,7 @@
 namespace Bronnikov {
     class Exercise;
     class ExerciseLibrary;
+    class SessionDatabase;
 }
 
 /**
@@ -53,10 +54,14 @@ public:
     Q_INVOKABLE void filterByStage(int stage);
     Q_INVOKABLE void resetFilter();
     Q_INVOKABLE QVariantMap getExercise(int index) const;
+    Q_INVOKABLE void refreshProgress();
 
     // Property getters/setters
     int currentStage() const { return m_currentStage; }
     void setCurrentStage(int stage);
+
+    // Database connection for progress tracking
+    void setDatabase(Bronnikov::SessionDatabase* db);
 
 signals:
     void countChanged();
@@ -67,6 +72,7 @@ private:
     std::unique_ptr<Bronnikov::ExerciseLibrary> m_library;
     std::vector<std::shared_ptr<Bronnikov::Exercise>> m_exercises;
     int m_currentStage = 0;  // 0 = Preparatory
+    Bronnikov::SessionDatabase* m_database = nullptr;
 
     void updateExercisesList();
     QString getIconForExercise(const std::string& exerciseName) const;

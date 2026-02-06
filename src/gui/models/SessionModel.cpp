@@ -1,6 +1,7 @@
 #include "models/SessionModel.h"
 #include "SessionDatabase.h"
 #include <QDateTime>
+#include <QDebug>
 #include <map>
 
 SessionModel::SessionModel(QObject* parent)
@@ -173,6 +174,7 @@ void SessionModel::loadUserProfile(const QString& userId)
     if (!m_database)
         return;
 
+    m_currentUserId = userId;  // Сохраняем текущий userId
     auto profile = m_database->loadUserProfile(userId.toStdString());
 
     if (profile.user_id.empty()) {
@@ -240,7 +242,19 @@ void SessionModel::updateCalibration(double iaf, double iapf)
 
     emit userProfileChanged();
 
-    // TODO: Сохранить в БД через UserProfile
+    // Сохраняем в БД
+    if (m_database) {
+        auto profile = m_database->loadUserProfile(m_currentUserId.toStdString());
+        if (profile.user_id.empty()) {
+            profile.user_id = m_currentUserId.toStdString();
+            profile.name = m_userName.isEmpty() ? "Пользователь" : m_userName.toStdString();
+        }
+        profile.iaf = iaf;
+        profile.iapf = iapf;
+        profile.last_calibration_date = m_lastCalibrationDate.toStdString();
+        m_database->saveUserProfile(profile);
+        qDebug() << "[SessionModel] Калибровка сохранена: IAF=" << iaf << "IAPF=" << iapf;
+    }
 }
 
 void SessionModel::updateBaseline(const QVariantMap& baselineMetrics)
@@ -254,7 +268,23 @@ void SessionModel::updateBaseline(const QVariantMap& baselineMetrics)
 
     emit userProfileChanged();
 
-    // TODO: Сохранить в БД через UserProfile
+    // Сохраняем в БД
+    if (m_database) {
+        auto profile = m_database->loadUserProfile(m_currentUserId.toStdString());
+        if (profile.user_id.empty()) {
+            profile.user_id = m_currentUserId.toStdString();
+            profile.name = m_userName.isEmpty() ? "Пользователь" : m_userName.toStdString();
+        }
+        profile.baseline_alpha = m_baselineAlpha;
+        profile.baseline_beta = m_baselineBeta;
+        profile.baseline_theta = m_baselineTheta;
+        profile.baseline_concentration = m_baselineConcentration;
+        profile.baseline_relaxation = m_baselineRelaxation;
+        profile.baseline_heart_rate = m_baselineHeartRate;
+        m_database->saveUserProfile(profile);
+        qDebug() << "[SessionModel] Baseline сохранён: Alpha=" << m_baselineAlpha
+                 << "Beta=" << m_baselineBeta << "Theta=" << m_baselineTheta;
+    }
 }
 
 QVariantList SessionModel::getExercisesStatistics(const QString& userId)
@@ -341,4 +371,57 @@ QVariantList SessionModel::getSessionsByDay(int daysBack, const QString& userId)
     }
 
     return result;
+}
+
+QStringList SessionModel::getAllUsers()
+{
+    QStringList result;
+    if (!m_database)
+        return result;
+
+    auto users = m_database->getAllUserIds();
+    for (const auto& userId : users) {
+        result.append(QString::fromStdString(userId));
+    }
+
+    return result;
+}
+
+bool SessionModel::createUser(const QString& userId, const QString& userName)
+{
+    if (!m_database)
+        return false;
+
+    if (userId.isEmpty())
+        return false;
+
+    // Создаём новый профиль пользователя
+    Bronnikov::UserProfileData profile;
+    profile.user_id = userId.toStdString();
+    profile.name = userName.isEmpty() ? userId.toStdString() : userName.toStdString();
+    profile.practice_level = Bronnikov::PracticeLevel::Beginner;
+
+    bool success = m_database->saveUserProfile(profile);
+
+    if (success) {
+        qDebug() << "[SessionModel] Пользователь создан:" << userId;
+    }
+
+    return success;
+}
+
+void SessionModel::switchUser(const QString& userId)
+{
+    if (userId.isEmpty())
+        return;
+
+    qDebug() << "[SessionModel] Переключение на пользователя:" << userId;
+
+    // Загружаем профиль нового пользователя
+    loadUserProfile(userId);
+
+    // Загружаем статистику
+    loadStatistics(userId);
+    loadStageProgress(userId);
+    loadRecentSessions(5, userId);
 }

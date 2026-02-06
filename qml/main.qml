@@ -23,6 +23,9 @@ ApplicationWindow {
     // Навигация - экспортируем stackView для доступа из других экранов
     property alias stackView: stackView
 
+    // Экран калибровки - экспортируем для доступа из PreparationScreen
+    property alias calibrationScreenComponent: calibrationScreen
+
     // Глобальная тема
     property var theme: Theme
 
@@ -266,6 +269,36 @@ ApplicationWindow {
         }
     }
 
+    // Модель для хранения найденных устройств
+    ListModel {
+        id: discoveredDevicesModel
+    }
+
+    // Подключение к сигналам deviceController для списка устройств
+    Connections {
+        target: deviceController
+
+        function onDeviceDiscovered(deviceId, deviceName) {
+            // Проверяем, нет ли уже этого устройства в списке
+            for (var i = 0; i < discoveredDevicesModel.count; i++) {
+                if (discoveredDevicesModel.get(i).deviceId === deviceId) {
+                    return  // Уже есть
+                }
+            }
+            discoveredDevicesModel.append({
+                "deviceId": deviceId,
+                "deviceName": deviceName
+            })
+        }
+
+        function onSearchProgress(message) {
+            // Очищаем список при начале нового поиска
+            if (message === "Поиск устройств...") {
+                discoveredDevicesModel.clear()
+            }
+        }
+    }
+
     // Диалог подключения к устройству
     Dialog {
         id: deviceDialog
@@ -273,11 +306,11 @@ ApplicationWindow {
         modal: true
         anchors.centerIn: parent
         width: 500
-        height: 400
+        height: 500  // Увеличили высоту для списка устройств
 
         ColumnLayout {
             anchors.fill: parent
-            spacing: Theme.paddingLarge
+            spacing: Theme.paddingMedium
 
             // Статус подключения
             Rectangle {
@@ -343,6 +376,109 @@ ApplicationWindow {
                 }
             }
 
+            // Список найденных устройств
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 120
+                color: Theme.surfaceColor
+                radius: Theme.radiusMedium
+                visible: discoveredDevicesModel.count > 0 && !(deviceController && deviceController.isConnected)
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: Theme.paddingMedium
+                    spacing: Theme.paddingSmall
+
+                    Text {
+                        text: "📱 Найденные устройства (" + discoveredDevicesModel.count + "):"
+                        font.pixelSize: Theme.fontSizeHeading3
+                        color: Theme.adaptiveTextPrimary
+                    }
+
+                    ListView {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        model: discoveredDevicesModel
+                        clip: true
+                        spacing: 4
+
+                        delegate: Rectangle {
+                            width: ListView.view.width
+                            height: 36
+                            color: mouseArea.containsMouse ? Theme.hoverColor : "transparent"
+                            radius: Theme.radiusSmall
+
+                            MouseArea {
+                                id: mouseArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: {
+                                    console.log("Подключение к устройству:", model.deviceId)
+                                    if (deviceController) {
+                                        deviceController.connectToDevice(model.deviceId)
+                                    }
+                                }
+                            }
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.margins: Theme.paddingSmall
+                                spacing: Theme.paddingMedium
+
+                                Text {
+                                    text: "📡"
+                                    font.pixelSize: 16
+                                }
+
+                                Text {
+                                    text: model.deviceName
+                                    font.pixelSize: Theme.fontSizeBody
+                                    color: Theme.adaptiveTextPrimary
+                                    Layout.fillWidth: true
+                                }
+
+                                Text {
+                                    text: "Подключить →"
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    color: Theme.primaryColor
+                                    visible: mouseArea.containsMouse
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Индикатор поиска/подключения
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 50
+                color: Theme.surfaceColor
+                radius: Theme.radiusMedium
+                visible: deviceController && (deviceController.connectionStatus === "Searching..." ||
+                         deviceController.connectionStatus === "Connecting...")
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: Theme.paddingMedium
+                    spacing: Theme.paddingMedium
+
+                    BusyIndicator {
+                        Layout.preferredWidth: 32
+                        Layout.preferredHeight: 32
+                        running: true
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: deviceController ? deviceController.connectionStatus : ""
+                        font.pixelSize: Theme.fontSizeBody
+                        color: Theme.primaryColor
+                        font.weight: Font.Medium
+                    }
+                }
+            }
+
             // Кнопки управления
             RowLayout {
                 Layout.fillWidth: true
@@ -351,7 +487,9 @@ ApplicationWindow {
                 Button {
                     Layout.fillWidth: true
                     text: "🔍 Поиск устройств"
-                    enabled: deviceController && !deviceController.isConnected
+                    enabled: deviceController && !deviceController.isConnected &&
+                             deviceController.connectionStatus !== "Searching..." &&
+                             deviceController.connectionStatus !== "Connecting..."
 
                     background: Rectangle {
                         color: parent.enabled ?
@@ -380,13 +518,18 @@ ApplicationWindow {
                 Button {
                     Layout.fillWidth: true
                     text: deviceController && deviceController.isConnected ? "❌ Отключить" : "✅ Подключить"
+                    enabled: deviceController &&
+                             deviceController.connectionStatus !== "Searching..." &&
+                             deviceController.connectionStatus !== "Connecting..."
 
                     background: Rectangle {
-                        color: parent.down ?
-                               Qt.darker(deviceController && deviceController.isConnected ? Theme.errorColor : Theme.successColor, 1.1) :
-                               parent.hovered ?
-                               Qt.lighter(deviceController && deviceController.isConnected ? Theme.errorColor : Theme.successColor, 1.1) :
-                               (deviceController && deviceController.isConnected ? Theme.errorColor : Theme.successColor)
+                        color: parent.enabled ?
+                               (parent.down ?
+                                   Qt.darker(deviceController && deviceController.isConnected ? Theme.errorColor : Theme.successColor, 1.1) :
+                                   parent.hovered ?
+                                   Qt.lighter(deviceController && deviceController.isConnected ? Theme.errorColor : Theme.successColor, 1.1) :
+                                   (deviceController && deviceController.isConnected ? Theme.errorColor : Theme.successColor)) :
+                               Theme.textDisabled
                         radius: Theme.radiusSmall
                     }
 
@@ -573,8 +716,13 @@ ApplicationWindow {
         id: homeScreen
         HomeScreen {
             onExerciseSelected: function(exerciseIndex) {
+                // Получить имя упражнения из модели
+                var exercise = exerciseModel.getExercise(exerciseIndex)
+                var exerciseName = exercise ? exercise.name : ""
+                console.log("[main] Выбрано упражнение:", exerciseName, "индекс:", exerciseIndex)
                 stackView.push(preparationScreen, {
-                    "exerciseIndex": exerciseIndex
+                    "exerciseIndex": exerciseIndex,
+                    "exerciseName": exerciseName
                 })
             }
 
@@ -587,8 +735,11 @@ ApplicationWindow {
     Component {
         id: preparationScreen
         PreparationScreen {
-            onStartExercise: {
-                stackView.push(exerciseScreen)
+            onStartExercise: function(name) {
+                console.log("[main] Запуск упражнения:", name)
+                stackView.push(exerciseScreen, {
+                    "exerciseName": name
+                })
             }
 
             // onStartDemo обрабатывается через Connections в window
@@ -665,9 +816,24 @@ ApplicationWindow {
         }
     }
 
+    Component {
+        id: calibrationScreen
+        CalibrationScreen {
+            onCalibrationCompleted: {
+                console.log("[main] Калибровка завершена, возврат к подготовке")
+                stackView.pop()
+            }
+            onCalibrationCancelled: {
+                console.log("[main] Калибровка отменена, возврат к подготовке")
+                stackView.pop()
+            }
+        }
+    }
+
     // НОВОЕ: Connections для демо-режима на уровне window
     Connections {
         target: stackView.currentItem
+        ignoreUnknownSignals: true
 
         function onStartDemo() {
             console.log("🎬 Signal startDemo получен в window")

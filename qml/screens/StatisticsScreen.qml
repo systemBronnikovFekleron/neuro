@@ -643,7 +643,7 @@ Item {
         property string title: ""
         property string value: ""
         property string icon: ""
-        property color color: Theme.primaryColor
+        property color accentColor: Theme.primaryColor
 
         height: 80
         color: Qt.darker(Theme.surfaceColor, 1.03)
@@ -666,7 +666,7 @@ Item {
                 text: value
                 font.pixelSize: Theme.fontSizeHeading2
                 font.weight: Theme.fontWeightBold
-                color: parent.parent.color
+                color: parent.parent.accentColor
             }
         }
     }

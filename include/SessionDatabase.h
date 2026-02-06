@@ -267,6 +267,12 @@ public:
      */
     bool saveUserProfile(const UserProfileData& profile);
 
+    /**
+     * @brief Получить список всех пользователей
+     * @return Вектор с ID всех пользователей
+     */
+    std::vector<std::string> getAllUserIds();
+
 private:
     std::string m_db_path;
     sqlite3* m_db = nullptr;

@@ -85,7 +85,7 @@ QtObject {
 
     // Семейства шрифтов
     readonly property string fontFamily: "Inter"
-    readonly property string fontFamilyMono: "JetBrains Mono"
+    readonly property string fontFamilyMono: Qt.platform.os === "osx" ? "Menlo" : "Consolas"
 
     // Shadows (elevation)
     readonly property string shadowLight: "0px 2px 4px rgba(0, 0, 0, 0.1)"

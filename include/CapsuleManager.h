@@ -65,6 +65,7 @@ public:
      */
     bool isConnected() const { return m_connected; }
     bool isDeviceConnected() const { return m_device_connected; }
+    bool hasLocator() const { return m_locator != nullptr; }
 
     /**
      * @brief Получение текущего устройства

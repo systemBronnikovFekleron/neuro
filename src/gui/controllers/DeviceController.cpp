@@ -4,6 +4,7 @@
 #include "MetricsCollector.h"
 #include <QDebug>
 #include <QThread>
+#include <QCoreApplication>
 #include <iostream>
 
 DeviceController::DeviceController(QObject* parent)
@@ -30,14 +31,36 @@ void DeviceController::discoverDevices()
         return;
     }
 
+    // Защита от множественных вызовов
+    if (m_currentOperation != AsyncOperation::None) {
+        qDebug() << "⚠ Уже выполняется операция, игнорируем поиск";
+        return;
+    }
+
     qDebug() << "🔍 Поиск устройств Neiry...";
     m_connectionStatus = "Searching...";
     emit connectionStatusChanged();
     emit searchProgress("Поиск устройств...");
 
-    // НОВОЕ: Запускаем асинхронный поиск (без автоподключения)
-    m_targetDeviceId.clear();  // Очищаем ID для режима "только поиск"
-    startAsyncOperation(AsyncOperation::DiscoveringDevices);
+    // Режим "только поиск" - без автоподключения
+    m_targetDeviceId.clear();
+    m_wantAutoConnect = false;
+
+    // Проверяем подключение к backend
+    if (!m_capsuleManager->isConnected()) {
+        qDebug() << "  Подключение к Capsule backend...";
+        if (!m_capsuleManager->connect("inproc://capsule")) {
+            qDebug() << "❌ Не удалось подключиться к Capsule";
+            emit errorOccurred("Failed to connect to Capsule backend");
+            m_connectionStatus = "Disconnected";
+            emit connectionStatusChanged();
+            return;
+        }
+        emit connectionProgress("Подключение к Capsule backend...");
+        startAsyncOperation(AsyncOperation::ConnectingToBackend);
+    } else {
+        startAsyncOperation(AsyncOperation::DiscoveringDevices);
+    }
 }
 
 void DeviceController::connectToDevice(const QString& deviceId)
@@ -47,11 +70,18 @@ void DeviceController::connectToDevice(const QString& deviceId)
         return;
     }
 
-    qDebug() << "🔌 Подключение к устройству...";
+    // Защита от множественных вызовов
+    if (m_currentOperation != AsyncOperation::None) {
+        qDebug() << "⚠ Уже выполняется операция, игнорируем";
+        return;
+    }
+
+    qDebug() << "🔌 Подключение к устройству..." << (deviceId.isEmpty() ? "(авто)" : deviceId);
     m_connectionStatus = "Connecting...";
     emit connectionStatusChanged();
 
     m_targetDeviceId = deviceId;
+    m_wantAutoConnect = true;  // Хотим подключиться после поиска
 
     // Проверяем, подключены ли мы к Capsule backend
     if (!m_capsuleManager->isConnected()) {
@@ -64,11 +94,15 @@ void DeviceController::connectToDevice(const QString& deviceId)
             return;
         }
 
-        // НОВОЕ: Запускаем асинхронное ожидание подключения
         emit connectionProgress("Подключение к Capsule backend...");
         startAsyncOperation(AsyncOperation::ConnectingToBackend);
+    } else if (!deviceId.isEmpty() && m_capsuleManager->hasLocator()) {
+        // Если устройство уже найдено (есть locator) и указан конкретный ID - подключаемся напрямую
+        qDebug() << "  Прямое подключение к известному устройству:" << deviceId;
+        emit connectionProgress(QString("Подключение к %1...").arg(deviceId));
+        startAsyncOperation(AsyncOperation::ConnectingToDevice);
     } else {
-        // Уже подключены, сразу ищем устройства
+        // Нужен поиск устройств
         emit connectionProgress("Поиск устройств...");
         startAsyncOperation(AsyncOperation::DiscoveringDevices);
     }
@@ -157,10 +191,11 @@ void DeviceController::startSession()
         return;
     }
 
-    // Ждем запуска сессии
+    // Ждем запуска сессии (с обработкой UI событий)
     for (int i = 0; i < 50 && !m_sessionManager->isActive(); ++i) {
         m_capsuleManager->update();
-        QThread::msleep(100);
+        QCoreApplication::processEvents();
+        QThread::msleep(50);
     }
 
     if (!m_sessionManager->isActive()) {
@@ -207,18 +242,20 @@ void DeviceController::startSession()
     qDebug() << "  Запуск режимов устройства (Signal + PPG)...";
     m_capsuleManager->switchDeviceMode(clC_DM_Signal);  // EEG данные
 
-    // Даем время на переключение режима
-    for (int i = 0; i < 5; ++i) {
+    // Даем время на переключение режима (с обработкой UI событий)
+    for (int i = 0; i < 3; ++i) {
         m_capsuleManager->update();
-        QThread::msleep(50);
+        QCoreApplication::processEvents();
+        QThread::msleep(30);
     }
 
     m_capsuleManager->switchDeviceMode(clC_DM_StartPPG);  // Кардио данные (PPG)
 
-    // Даем время на переключение режима
-    for (int i = 0; i < 5; ++i) {
+    // Даем время на переключение режима (с обработкой UI событий)
+    for (int i = 0; i < 3; ++i) {
         m_capsuleManager->update();
-        QThread::msleep(50);
+        QCoreApplication::processEvents();
+        QThread::msleep(30);
     }
 
     qDebug() << "✓ Режимы устройства запущены";
@@ -248,10 +285,11 @@ void DeviceController::stopSession()
     // Останавливаем сессию
     m_sessionManager->stopSession();
 
-    // Ждем остановки
+    // Ждем остановки (с обработкой UI событий)
     for (int i = 0; i < 20 && m_sessionManager->isActive(); ++i) {
         m_capsuleManager->update();
-        QThread::msleep(100);
+        QCoreApplication::processEvents();
+        QThread::msleep(50);
     }
 
     // Уничтожаем MetricsCollector и SessionManager
@@ -316,12 +354,25 @@ void DeviceController::startCalibration()
         }
     });
 
-    // Запускаем калибровку
-    if (!m_metricsCollector->startCalibration(90)) {
-        qDebug() << "❌ Не удалось запустить калибровку";
+    // Запускаем калибровку с повторными попытками (калибратор может быть не готов)
+    bool started = false;
+    for (int attempt = 0; attempt < 10 && !started; ++attempt) {
+        if (attempt > 0) {
+            qDebug() << "  Попытка" << (attempt + 1) << "...";
+            // Ждём и обновляем для получения события OnReadyToCalibrate
+            for (int i = 0; i < 20; ++i) {
+                if (m_capsuleManager) m_capsuleManager->update();
+                QThread::msleep(100);
+            }
+        }
+        started = m_metricsCollector->startCalibration(90);
+    }
+
+    if (!started) {
+        qDebug() << "❌ Не удалось запустить калибровку после 10 попыток";
         m_isCalibrating = false;
         emit isCalibratingChanged();
-        emit calibrationFailed("Failed to start calibration");
+        emit calibrationFailed("Calibrator not ready. Try again in a few seconds.");
         return;
     }
 
@@ -513,10 +564,15 @@ void DeviceController::onAsyncUpdate()
             } else if (m_operationStep > 100) {  // 5 секунд timeout
                 qDebug() << "⚠ Timeout при поиске устройств";
                 emit searchProgress("Timeout при поиске устройств");
+
+                // ИСПРАВЛЕНО: Обновляем статус подключения после timeout
+                m_connectionStatus = "Disconnected";
+                emit connectionStatusChanged();
+
                 stopAsyncOperation();
 
-                // Если была команда подключения (есть targetDeviceId), сообщаем об ошибке
-                if (!m_targetDeviceId.isEmpty()) {
+                // Если была команда подключения, сообщаем об ошибке
+                if (m_wantAutoConnect) {
                     emit connectionFailed("Device discovery timeout");
                 }
             }
@@ -560,7 +616,10 @@ void DeviceController::onAsyncUpdate()
                 emit batteryLevelChanged();
                 emit signalQualityChanged();
 
-                stopAsyncOperation();
+                // ИСПРАВЛЕНО: Не останавливаем таймер полностью, переходим в режим мониторинга
+                m_currentOperation = AsyncOperation::None;
+                m_operationStep = 0;
+                // Таймер продолжает работать для периодических обновлений
                 emit connectionProgress("Подключено");
             }
             break;
@@ -574,6 +633,27 @@ void DeviceController::onAsyncUpdate()
             break;
 
         default:
+            // Мониторинг состояния устройства когда подключены но нет активной операции
+            if (m_isConnected && m_capsuleManager) {
+                // Периодически (каждые 2 секунды = 40 шагов) обновляем данные устройства
+                static int monitor_counter = 0;
+                if (++monitor_counter >= 40) {
+                    monitor_counter = 0;
+
+                    int newBattery = m_capsuleManager->getBatteryLevel();
+                    if (newBattery != m_batteryLevel && newBattery > 0) {
+                        m_batteryLevel = newBattery;
+                        emit batteryLevelChanged();
+                    }
+
+                    int newQuality = m_capsuleManager->getSignalQuality();
+                    if (newQuality != m_signalQualityChannel1) {
+                        m_signalQualityChannel1 = newQuality;
+                        m_signalQualityChannel2 = newQuality;
+                        emit signalQualityChanged();
+                    }
+                }
+            }
             break;
     }
 }
@@ -600,7 +680,10 @@ void DeviceController::startAsyncOperation(AsyncOperation operation)
 
 void DeviceController::stopAsyncOperation()
 {
-    m_asyncTimer->stop();
+    // ИСПРАВЛЕНО: Не останавливаем таймер если устройство подключено (нужен для мониторинга)
+    if (!m_isConnected) {
+        m_asyncTimer->stop();
+    }
     m_currentOperation = AsyncOperation::None;
     m_operationStep = 0;
 }
@@ -619,11 +702,14 @@ void DeviceController::setupCallbacks()
             qDebug() << "  Устройства не найдены";
             emit searchProgress("Устройства не найдены");
 
-            if (!m_targetDeviceId.isEmpty()) {
+            if (m_wantAutoConnect) {
                 emit connectionFailed("No devices found");
             }
 
             stopAsyncOperation();
+            // ИСПРАВЛЕНО: Сбрасываем статус после поиска
+            updateConnectionStatus();
+            emit connectionStatusChanged();
             return;
         }
 
@@ -638,8 +724,8 @@ void DeviceController::setupCallbacks()
             emit searchProgress(QString("Найдено: %1").arg(qDeviceName));
         }
 
-        // Если был запрос на подключение (есть targetDeviceId), подключаемся к первому устройству
-        if (!m_targetDeviceId.isEmpty()) {
+        // Если был запрос на подключение, подключаемся
+        if (m_wantAutoConnect) {
             // Находим нужное устройство или берем первое
             bool found = false;
             for (const auto& device_id : device_ids) {
@@ -652,6 +738,7 @@ void DeviceController::setupCallbacks()
             }
 
             if (found) {
+                qDebug() << "  Автоподключение к:" << m_targetDeviceId;
                 stopAsyncOperation();
                 startAsyncOperation(AsyncOperation::ConnectingToDevice);
                 emit connectionProgress(QString("Подключение к %1...").arg(m_targetDeviceId));
@@ -659,10 +746,16 @@ void DeviceController::setupCallbacks()
                 qDebug() << "❌ Целевое устройство не найдено:" << m_targetDeviceId;
                 emit connectionFailed("Target device not found");
                 stopAsyncOperation();
+                updateConnectionStatus();
+                emit connectionStatusChanged();
             }
         } else {
             // Просто поиск, останавливаем операцию
+            qDebug() << "  Поиск завершён (без автоподключения)";
             stopAsyncOperation();
+            // ИСПРАВЛЕНО: Сбрасываем статус после поиска
+            updateConnectionStatus();
+            emit connectionStatusChanged();
         }
     });
 
@@ -674,6 +767,9 @@ void DeviceController::setupCallbacks()
 
         // Останавливаем текущую операцию при ошибке
         stopAsyncOperation();
+        // ИСПРАВЛЕНО: Сбрасываем статус после ошибки
+        updateConnectionStatus();
+        emit connectionStatusChanged();
     });
 
     // Callback при подключении к backend

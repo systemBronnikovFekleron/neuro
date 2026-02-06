@@ -1,6 +1,7 @@
 #include "models/ExerciseModel.h"
 #include "ExerciseLibrary.h"
 #include "Exercise.h"
+#include "SessionDatabase.h"
 #include <QDebug>
 
 ExerciseModel::ExerciseModel(QObject* parent)
@@ -137,6 +138,16 @@ void ExerciseModel::setCurrentStage(int stage)
     }
 }
 
+void ExerciseModel::refreshProgress()
+{
+    // Emit dataChanged for IsCompletedRole and BestSuccessRateRole
+    if (!m_exercises.empty()) {
+        QVector<int> roles;
+        roles << IsCompletedRole << BestSuccessRateRole;
+        emit dataChanged(index(0), index(static_cast<int>(m_exercises.size()) - 1), roles);
+    }
+}
+
 QString ExerciseModel::getIconForExercise(const std::string& exerciseName) const
 {
     // TODO: Map exercise names to icons
@@ -153,16 +164,30 @@ QString ExerciseModel::getIconForExercise(const std::string& exerciseName) const
     return "🧘";
 }
 
+void ExerciseModel::setDatabase(Bronnikov::SessionDatabase* db)
+{
+    m_database = db;
+}
+
 bool ExerciseModel::isExerciseCompleted(const std::string& exerciseName) const
 {
-    // TODO: Query from SessionDatabase
-    Q_UNUSED(exerciseName);
+    if (!m_database) return false;
+
+    auto sessions = m_database->getSessionsByExercise(exerciseName, "default");
+    for (const auto& s : sessions) {
+        if (s.success_rate >= 70.0) return true;
+    }
     return false;
 }
 
 double ExerciseModel::getBestSuccessRate(const std::string& exerciseName) const
 {
-    // TODO: Query from SessionDatabase
-    Q_UNUSED(exerciseName);
-    return 0.0;
+    if (!m_database) return 0.0;
+
+    auto sessions = m_database->getSessionsByExercise(exerciseName, "default");
+    double best = 0.0;
+    for (const auto& s : sessions) {
+        if (s.success_rate > best) best = s.success_rate;
+    }
+    return best;
 }

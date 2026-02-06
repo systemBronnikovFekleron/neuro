@@ -6,6 +6,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QQuickStyle>
 #include <QIcon>
 #include <QDebug>
 
@@ -32,6 +33,10 @@ int main(int argc, char *argv[])
     QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
     QGuiApplication app(argc, argv);
+
+    // Установить стиль Basic для корректной кастомизации контролов
+    // (нативный macOS стиль не поддерживает кастомизацию)
+    QQuickStyle::setStyle("Basic");
 
     // Настройка приложения
     app.setOrganizationName("Bronnikov Method");
@@ -74,6 +79,7 @@ int main(int argc, char *argv[])
 
     // Exercise Model - список упражнений
     auto exerciseModel = new ExerciseModel(&app);
+    exerciseModel->setDatabase(database.get());
     exerciseModel->loadExercises();
 
     // Metrics Model - real-time метрики
@@ -120,10 +126,11 @@ int main(int argc, char *argv[])
                      metricsModel, &MetricsModel::stopMonitoring);
 
     QObject::connect(exerciseController, &ExerciseController::exerciseCompleted,
-                     sessionModel, [sessionModel]() {
+                     sessionModel, [sessionModel, exerciseModel]() {
                          sessionModel->loadStatistics();
                          sessionModel->loadStageProgress();
                          sessionModel->loadRecentSessions();
+                         exerciseModel->refreshProgress();
                      });
 
     // Подключение аудио обратной связи к событиям упражнения
@@ -135,6 +142,10 @@ int main(int argc, char *argv[])
                      audioController, &AudioController::onExerciseStarted);
     QObject::connect(exerciseController, &ExerciseController::exerciseCompleted,
                      audioController, &AudioController::onExerciseCompleted);
+
+    // Связь калибровки с профилем пользователя
+    QObject::connect(deviceController, &DeviceController::calibrationCompleted,
+                     sessionModel, &SessionModel::updateCalibration);
 
     // ============================================================================
     // Регистрация моделей и контроллеров в QML контексте

@@ -35,6 +35,7 @@ if(BUILD_GUI)
         Gui
         Quick
         Qml
+        QuickControls2
         Charts
         Svg
         Multimedia
@@ -243,6 +244,7 @@ if(BUILD_GUI)
         Qt6::Gui
         Qt6::Quick
         Qt6::Qml
+        Qt6::QuickControls2
         Qt6::Charts
         Qt6::Svg
         Qt6::Multimedia

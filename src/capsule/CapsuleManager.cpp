@@ -123,14 +123,40 @@ bool CapsuleManager::connectToDevice(const std::string& device_id) {
         return false;
     }
 
+    // Если устройство уже создано и подключено, не создаём заново
+    if (m_device && m_device_connected) {
+        std::cout << "[CapsuleManager] Устройство уже подключено" << std::endl;
+        return true;
+    }
+
+    // Если устройство создано но не подключено, просто подключаемся
+    if (m_device) {
+        std::cout << "[CapsuleManager] Устройство уже создано, подключаемся..." << std::endl;
+        clCDevice_Connect(m_device);
+        return true;
+    }
+
+    std::cout << "[CapsuleManager] Создание устройства с ID: " << device_id << std::endl;
+
+    // Даем время на завершение поиска и обработку данных
+    for (int i = 0; i < 10; ++i) {
+        if (m_client) {
+            clCClient_Update(m_client);
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+
     // Создание устройства по ID
     m_device = clCDeviceLocator_CreateDevice(m_locator, device_id.c_str());
     if (!m_device) {
+        std::cout << "[CapsuleManager] ❌ clCDeviceLocator_CreateDevice вернул nullptr для ID: " << device_id << std::endl;
         if (m_on_error) {
             m_on_error("Не удалось создать устройство");
         }
         return false;
     }
+
+    std::cout << "[CapsuleManager] ✓ Устройство создано успешно" << std::endl;
 
     // Регистрируем устройство в глобальном map
     g_device_map[m_device] = this;
@@ -162,8 +188,12 @@ void CapsuleManager::disconnectDevice() {
         clCDevice_Disconnect(m_device);
         // НЕТ Destroy для device - управляется автоматически
         m_device = nullptr;
+        std::cout << "[CapsuleManager] Устройство отключено" << std::endl;
     }
     m_device_connected = false;
+
+    // НЕ уничтожаем локатор - он нужен для повторного поиска
+    // CapsuleAPI не позволяет создать новый локатор после уничтожения старого
 }
 
 void CapsuleManager::update() {
