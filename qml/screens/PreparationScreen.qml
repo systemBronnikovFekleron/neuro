@@ -7,10 +7,11 @@ Item {
     id: preparationScreen
 
     property int exerciseIndex: 0
+    property string exerciseName: ""
     property string statusMessage: deviceController && deviceController.isConnected ? "Устройство подключено" : "Ожидание подключения..."
     property bool isConnecting: false
 
-    signal startExercise()
+    signal startExercise(string name)
     signal startDemo()  // НОВОЕ: запуск в демо-режиме
     signal back()
 
@@ -85,7 +86,7 @@ Item {
                 }
 
                 Text {
-                    text: "Подготовка к упражнению"
+                    text: preparationScreen.exerciseName || "Подготовка к упражнению"
                     font.pixelSize: Theme.fontSizeHeading1
                     font.weight: Theme.fontWeightBold
                     color: Theme.adaptiveTextPrimary
@@ -232,88 +233,104 @@ Item {
             // Настройки упражнения
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 200
+                Layout.preferredHeight: 180
                 color: Theme.surfaceColor
                 radius: Theme.radiusMedium
 
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: Theme.paddingMedium
-                    spacing: Theme.paddingMedium
+                    spacing: Theme.paddingSmall
 
                     Text {
-                        text: "⚙️ Настройки упражнения"
+                        text: "Настройки упражнения"
                         font.pixelSize: Theme.fontSizeHeading3
-                        font.weight: Theme.fontWeightMedium
+                        font.weight: Theme.fontWeightBold
                         color: Theme.adaptiveTextPrimary
                     }
 
                     // Выбор длительности
-                    ColumnLayout {
+                    RowLayout {
                         Layout.fillWidth: true
-                        spacing: Theme.paddingSmall
+                        spacing: Theme.paddingLarge
 
                         Text {
                             text: "Длительность:"
                             font.pixelSize: Theme.fontSizeBody
-                            color: Theme.adaptiveTextSecondary
+                            font.weight: Theme.fontWeightMedium
+                            color: Theme.adaptiveTextPrimary
                         }
 
-                        // Рекомендуемая длительность
-                        RadioButton {
-                            id: autoRadio
-                            checked: true
-                            text: {
-                                if (sessionModel) {
-                                    var level = sessionModel.practiceLevel || 0; // 0=Beginner, 1=Intermediate, 2=Expert
-                                    var ranges = ["1-2 минуты (новичок)", "2-5 минут (практикующий)", "5-10 минут (специалист)"];
-                                    return "Рекомендуемая: " + ranges[level];
-                                } else {
-                                    return "Рекомендуемая: 1-2 минуты";
+                        // Группа для исключительного выбора
+                        ButtonGroup { id: durationGroup }
+
+                        // Рекомендуемая
+                        Row {
+                            spacing: 6
+
+                            RadioButton {
+                                id: autoRadio
+                                checked: true
+                                ButtonGroup.group: durationGroup
+                                onCheckedChanged: {
+                                    if (checked && exerciseController) {
+                                        var level = sessionModel ? sessionModel.practiceLevel : 0;
+                                        exerciseController.setRecommendedDuration(level, false);
+                                    }
                                 }
                             }
-                            font.pixelSize: Theme.fontSizeBody
-
-                            onCheckedChanged: {
-                                if (checked && exerciseController) {
-                                    // Установить рекомендуемую длительность на основе уровня
-                                    var level = sessionModel ? sessionModel.practiceLevel : 0;
-                                    exerciseController.setRecommendedDuration(level, false); // минимум диапазона
+                            Text {
+                                text: {
+                                    if (sessionModel) {
+                                        var level = sessionModel.practiceLevel || 0;
+                                        var ranges = ["1-2 мин (новичок)", "2-5 мин (практик)", "5-10 мин (эксперт)"];
+                                        return "Рекомендуемая: " + ranges[level];
+                                    }
+                                    return "Рекомендуемая: 1-2 мин";
+                                }
+                                font.pixelSize: Theme.fontSizeBody
+                                color: Theme.adaptiveTextPrimary
+                                anchors.verticalCenter: parent.verticalCenter
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: autoRadio.checked = true
                                 }
                             }
                         }
 
-                        // Ручной выбор
-                        RowLayout {
-                            spacing: Theme.paddingMedium
+                        // Вручную
+                        Row {
+                            spacing: 6
 
                             RadioButton {
                                 id: manualRadio
-                                text: "Выбрать вручную:"
-                                font.pixelSize: Theme.fontSizeBody
-
+                                ButtonGroup.group: durationGroup
                                 onCheckedChanged: {
                                     if (checked && exerciseController) {
                                         exerciseController.setDuration(durationSpinBox.value);
                                     }
                                 }
                             }
-
+                            Text {
+                                text: "Вручную:"
+                                font.pixelSize: Theme.fontSizeBody
+                                color: Theme.adaptiveTextPrimary
+                                anchors.verticalCenter: parent.verticalCenter
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: manualRadio.checked = true
+                                }
+                            }
                             SpinBox {
                                 id: durationSpinBox
                                 from: 1
                                 to: 20
                                 value: 5
                                 enabled: manualRadio.checked
+                                width: 100
 
-                                // Отображение с "мин"
-                                textFromValue: function(value) {
-                                    return value + " мин";
-                                }
-
-                                valueFromText: function(text) {
-                                    return parseInt(text);
-                                }
+                                textFromValue: function(value) { return value + " мин"; }
+                                valueFromText: function(text) { return parseInt(text); }
 
                                 onValueChanged: {
                                     if (manualRadio.checked && exerciseController) {
@@ -324,12 +341,22 @@ Item {
                         }
                     }
 
-                    // Отображение текущей длительности
-                    Text {
-                        text: "Упражнение будет длиться: " + (exerciseController ? exerciseController.duration : 5) + " минут"
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.primaryColor
-                        font.weight: Theme.fontWeightMedium
+                    // Итоговая длительность
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 40
+                        color: Qt.rgba(Theme.primaryColor.r, Theme.primaryColor.g, Theme.primaryColor.b, 0.1)
+                        radius: Theme.radiusSmall
+                        border.color: Theme.primaryColor
+                        border.width: 1
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Длительность упражнения: " + (exerciseController ? exerciseController.duration : 5) + " минут"
+                            font.pixelSize: Theme.fontSizeBody
+                            color: Theme.primaryColor
+                            font.weight: Theme.fontWeightBold
+                        }
                     }
                 }
             }
@@ -369,7 +396,7 @@ Item {
                     text: "🎯 Калибровка"
                     font.pixelSize: Theme.fontSizeBody
                     visible: deviceController && deviceController.isConnected
-                    enabled: !preparationScreen.isConnecting
+                    enabled: deviceController && deviceController.isConnected  // Активна когда подключено
 
                     background: Rectangle {
                         color: parent.down ? Qt.darker(Theme.secondaryColor, 1.1) :
@@ -392,8 +419,8 @@ Item {
                         if (deviceController && !deviceController.isSessionActive) {
                             deviceController.startSession()
                         }
-                        // Переходим к экрану калибровки
-                        mainWindow.stackView.push("qrc:/screens/CalibrationScreen.qml")
+                        // Переходим к экрану калибровки через Component
+                        mainWindow.stackView.push(mainWindow.calibrationScreenComponent)
                     }
                 }
 
@@ -423,8 +450,8 @@ Item {
                     }
 
                     onClicked: {
-                        // TODO: Перейти к калибровке или инструкциям
-                        startExercise()
+                        console.log("[PreparationScreen] Запуск упражнения:", preparationScreen.exerciseName)
+                        startExercise(preparationScreen.exerciseName)
                     }
                 }
             }
