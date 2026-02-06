@@ -14,10 +14,14 @@ ApplicationWindow {
     visible: true
     title: "Bronnikov Method - Brain Training"
 
-    // C++ модели - сохраняем reference для использования в handlers
+    // C++ модели и контроллеры - сохраняем reference для использования в handlers
     property var appMetricsModel: metricsModel
     property var appExerciseModel: exerciseModel
     property var appSessionModel: sessionModel
+    property var appDeviceController: deviceController
+
+    // Навигация - экспортируем stackView для доступа из других экранов
+    property alias stackView: stackView
 
     // Глобальная тема
     property var theme: Theme
@@ -599,7 +603,13 @@ ApplicationWindow {
         id: exerciseScreen
         ExerciseScreen {
             onExerciseCompleted: {
-                stackView.push(resultsScreen)
+                // НОВОЕ: Передать снимки метрик в ResultsScreen
+                var resultsPage = resultsScreen.createObject(null, {
+                    "baselineSnapshot": baselineSnapshot,
+                    "activeSnapshot": activeSnapshot,
+                    "postSnapshot": postSnapshot
+                })
+                stackView.push(resultsPage)
             }
 
             onBack: {
@@ -619,6 +629,10 @@ ApplicationWindow {
                 stackView.pop()
                 stackView.push(preparationScreen)
             }
+
+            onShowStatistics: {
+                stackView.push(statisticsScreen)
+            }
         }
     }
 
@@ -634,6 +648,8 @@ ApplicationWindow {
     Component {
         id: profileScreen
         ProfileScreen {
+            sessionModel: appSessionModel
+            deviceController: appDeviceController
             onBack: {
                 stackView.pop()
             }

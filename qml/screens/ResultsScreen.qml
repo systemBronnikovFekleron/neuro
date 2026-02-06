@@ -6,32 +6,53 @@ import "../styles"
 Item {
     signal returnHome()
     signal repeat()
+    signal showStatistics()
 
-    // НОВОЕ: Свойства для трехфазных метрик
-    property real successRate: 68.0
-    property real effectiveness: 72.5
-    property bool targetAchieved: true
+    // НОВОЕ: Снимки метрик из ExerciseScreen
+    property var baselineSnapshot: null
+    property var activeSnapshot: null
+    property var postSnapshot: null
+
+    // НОВОЕ: Свойства для трехфазных метрик (вычисляются из снимков)
+    property real successRate: postSnapshot ? postSnapshot.successRate : 0.0
+    property real effectiveness: {
+        if (!baselineSnapshot || !postSnapshot) return 0.0
+        // Простая формула effectiveness = улучшение концентрации + снижение стресса
+        var concentrationImprovement = postSnapshot.concentration - baselineSnapshot.concentration
+        var stressReduction = baselineSnapshot.stress - postSnapshot.stress
+        return Math.max(0, Math.min(100, 50 + concentrationImprovement + stressReduction))
+    }
+    property bool targetAchieved: successRate >= 60.0
 
     // Baseline метрики
-    property real baselineAlpha: 45.0
-    property real baselineBeta: 35.0
-    property real baselineTheta: 20.0
-    property real baselineConcentration: 40.0
-    property real baselineRelaxation: 50.0
+    property real baselineAlpha: baselineSnapshot ? baselineSnapshot.alpha : 0.0
+    property real baselineBeta: baselineSnapshot ? baselineSnapshot.beta : 0.0
+    property real baselineTheta: baselineSnapshot ? baselineSnapshot.theta : 0.0
+    property real baselineConcentration: baselineSnapshot ? baselineSnapshot.concentration : 0.0
+    property real baselineRelaxation: baselineSnapshot ? baselineSnapshot.relaxation : 0.0
 
     // Active метрики (средние)
-    property real activeAlpha: 58.0
-    property real activeBeta: 42.0
-    property real activeTheta: 25.0
-    property real activeConcentration: 65.0
-    property real activeRelaxation: 55.0
+    property real activeAlpha: activeSnapshot ? activeSnapshot.alpha : 0.0
+    property real activeBeta: activeSnapshot ? activeSnapshot.beta : 0.0
+    property real activeTheta: activeSnapshot ? activeSnapshot.theta : 0.0
+    property real activeConcentration: activeSnapshot ? activeSnapshot.concentration : 0.0
+    property real activeRelaxation: activeSnapshot ? activeSnapshot.relaxation : 0.0
 
     // Post метрики
-    property real postAlpha: 62.0
-    property real postBeta: 38.0
-    property real postTheta: 28.0
-    property real postConcentration: 70.0
-    property real postRelaxation: 60.0
+    property real postAlpha: postSnapshot ? postSnapshot.alpha : 0.0
+    property real postBeta: postSnapshot ? postSnapshot.beta : 0.0
+    property real postTheta: postSnapshot ? postSnapshot.theta : 0.0
+    property real postConcentration: postSnapshot ? postSnapshot.concentration : 0.0
+    property real postRelaxation: postSnapshot ? postSnapshot.relaxation : 0.0
+
+    // DEBUG: Логирование при создании
+    Component.onCompleted: {
+        console.log("📊 ResultsScreen initialized")
+        console.log("  Baseline:", JSON.stringify(baselineSnapshot))
+        console.log("  Active:", JSON.stringify(activeSnapshot))
+        console.log("  Post:", JSON.stringify(postSnapshot))
+        console.log("  Success Rate:", successRate)
+    }
 
     // Вспомогательная функция для форматирования изменений
     function formatChange(value) {
@@ -509,7 +530,7 @@ Item {
                     }
 
                     onClicked: {
-                        // TODO: Открыть статистику
+                        showStatistics()
                     }
                 }
 

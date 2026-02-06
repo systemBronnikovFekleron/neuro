@@ -75,7 +75,7 @@ Item {
                                 text: "🎨 Интерфейс"
                                 font.pixelSize: Theme.fontSizeHeading3
                                 font.weight: Theme.fontWeightMedium
-                                color: "#1a1a1a"
+                                color: Theme.adaptiveTextPrimary
                             }
 
                             RowLayout {
@@ -84,7 +84,7 @@ Item {
                                 Text {
                                     text: "Тема оформления:"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                     Layout.preferredWidth: 200
                                 }
 
@@ -98,7 +98,7 @@ Item {
                                         rightPadding: 40
                                         text: parent.displayText
                                         font: parent.font
-                                        color: "#1a1a1a"
+                                        color: Theme.adaptiveTextPrimary
                                         verticalAlignment: Text.AlignVCenter
                                     }
 
@@ -116,7 +116,7 @@ Item {
                                 Text {
                                     text: "Язык:"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                     Layout.preferredWidth: 200
                                 }
 
@@ -130,7 +130,7 @@ Item {
                                         rightPadding: 40
                                         text: parent.displayText
                                         font: parent.font
-                                        color: "#1a1a1a"
+                                        color: Theme.adaptiveTextPrimary
                                         verticalAlignment: Text.AlignVCenter
                                     }
 
@@ -148,7 +148,7 @@ Item {
                                 Text {
                                     text: "Показывать подсказки:"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                     Layout.preferredWidth: 200
                                 }
 
@@ -180,7 +180,7 @@ Item {
                                 text: "📡 Устройство"
                                 font.pixelSize: Theme.fontSizeHeading3
                                 font.weight: Theme.fontWeightMedium
-                                color: "#1a1a1a"
+                                color: Theme.adaptiveTextPrimary
                             }
 
                             RowLayout {
@@ -189,7 +189,7 @@ Item {
                                 Text {
                                     text: "Автоподключение:"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                     Layout.preferredWidth: 200
                                 }
 
@@ -209,7 +209,7 @@ Item {
                                 Text {
                                     text: "Использовать демо-режим:"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                     Layout.preferredWidth: 200
                                 }
 
@@ -231,7 +231,7 @@ Item {
                                 Text {
                                     text: "Последнее устройство:"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                     Layout.preferredWidth: 200
                                 }
 
@@ -240,7 +240,7 @@ Item {
                                           settingsController.lastDevice :
                                           "Не подключено"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#1a1a1a"
+                                    color: Theme.adaptiveTextPrimary
                                 }
                             }
                         }
@@ -249,7 +249,7 @@ Item {
                     // Настройки упражнений
                     Rectangle {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 180
+                        Layout.preferredHeight: 220
                         color: Theme.surfaceColor
                         radius: Theme.radiusMedium
 
@@ -262,7 +262,40 @@ Item {
                                 text: "🧘 Упражнения"
                                 font.pixelSize: Theme.fontSizeHeading3
                                 font.weight: Theme.fontWeightMedium
-                                color: "#1a1a1a"
+                                color: Theme.adaptiveTextPrimary
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+
+                                Text {
+                                    text: "Уровень практики:"
+                                    font.pixelSize: Theme.fontSizeBody
+                                    color: Theme.adaptiveTextSecondary
+                                    Layout.preferredWidth: 220
+                                }
+
+                                ComboBox {
+                                    id: practiceLevelCombo
+                                    Layout.preferredWidth: 200
+                                    model: ["Новичок (1-2 мин)", "Практикующий (2-5 мин)", "Эксперт (5-10 мин)"]
+                                    currentIndex: sessionModel ? sessionModel.practiceLevel : 0
+
+                                    contentItem: Text {
+                                        leftPadding: 12
+                                        rightPadding: 40
+                                        text: parent.displayText
+                                        font: parent.font
+                                        color: Theme.adaptiveTextPrimary
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+
+                                    onActivated: function(index) {
+                                        if (sessionModel) {
+                                            sessionModel.setPracticeLevel(index, "default")
+                                        }
+                                    }
+                                }
                             }
 
                             RowLayout {
@@ -271,7 +304,7 @@ Item {
                                 Text {
                                     text: "Длительность по умолчанию:"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                     Layout.preferredWidth: 220
                                 }
 
@@ -299,7 +332,7 @@ Item {
                                 Text {
                                     text: "Звуковые сигналы:"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                     Layout.preferredWidth: 220
                                 }
 
@@ -319,7 +352,7 @@ Item {
                                 Text {
                                     text: "Голосовые инструкции:"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                     Layout.preferredWidth: 220
                                 }
 
@@ -341,7 +374,7 @@ Item {
                                 Text {
                                     text: "Громкость звуков:"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                 }
 
                                 RowLayout {
@@ -365,7 +398,7 @@ Item {
                                     Text {
                                         text: Math.round((audioController ? audioController.volume : 0.7) * 100) + "%"
                                         font.pixelSize: Theme.fontSizeSmall
-                                        color: "#999999"
+                                        color: Theme.textDisabled
                                         Layout.preferredWidth: 40
                                     }
                                 }
@@ -379,7 +412,7 @@ Item {
                                 Text {
                                     text: "Скорость речи:"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                 }
 
                                 RowLayout {
@@ -403,7 +436,7 @@ Item {
                                     Text {
                                         text: (audioController ? audioController.rate : 1.0).toFixed(1) + "x"
                                         font.pixelSize: Theme.fontSizeSmall
-                                        color: "#999999"
+                                        color: Theme.textDisabled
                                         Layout.preferredWidth: 40
                                     }
                                 }
@@ -427,7 +460,7 @@ Item {
                                 text: "💾 Данные"
                                 font.pixelSize: Theme.fontSizeHeading3
                                 font.weight: Theme.fontWeightMedium
-                                color: "#1a1a1a"
+                                color: Theme.adaptiveTextPrimary
                             }
 
                             RowLayout {
@@ -436,7 +469,7 @@ Item {
                                 Text {
                                     text: "Автосохранение CSV:"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                     Layout.preferredWidth: 220
                                 }
 
@@ -456,7 +489,7 @@ Item {
                                 Text {
                                     text: "Research Mode (raw EEG/PPG/MEMS):"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                     Layout.preferredWidth: 220
                                 }
 
@@ -545,31 +578,31 @@ Item {
                                 text: "ℹ️ О приложении"
                                 font.pixelSize: Theme.fontSizeHeading3
                                 font.weight: Theme.fontWeightMedium
-                                color: "#1a1a1a"
+                                color: Theme.adaptiveTextPrimary
                             }
 
                             Text {
                                 text: "Bronnikov Exercise App"
                                 font.pixelSize: Theme.fontSizeBody
-                                color: "#1a1a1a"
+                                color: Theme.adaptiveTextPrimary
                             }
 
                             Text {
                                 text: "Версия: 0.10.0"
                                 font.pixelSize: Theme.fontSizeSmall
-                                color: "#666666"
+                                color: Theme.adaptiveTextSecondary
                             }
 
                             Text {
                                 text: "Qt версия: 6.10.1"
                                 font.pixelSize: Theme.fontSizeSmall
-                                color: "#666666"
+                                color: Theme.adaptiveTextSecondary
                             }
 
                             Text {
                                 text: "© 2024 Bronnikov Method"
                                 font.pixelSize: Theme.fontSizeSmall
-                                color: "#666666"
+                                color: Theme.adaptiveTextSecondary
                             }
                         }
                     }
@@ -612,7 +645,7 @@ Item {
                 font.pixelSize: Theme.fontSizeSmall
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
-                color: "#666666"
+                color: Theme.adaptiveTextSecondary
             }
 
             Text {

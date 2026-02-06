@@ -14,10 +14,13 @@ static std::map<clCNFB, MetricsCollector*> g_nfb_map;
 static std::map<clCEmotions, MetricsCollector*> g_emotions_map;
 static std::map<clCCardio, MetricsCollector*> g_cardio_map;
 static std::map<clCNFBCalibrator, MetricsCollector*> g_calibrator_map;
+static std::map<clCSession, MetricsCollector*> g_session_map;
 
 MetricsCollector::MetricsCollector(clCSession session)
     : m_session(session)
 {
+    // Регистрируем сессию для Research Mode callbacks
+    g_session_map[session] = this;
 }
 
 MetricsCollector::~MetricsCollector() {
@@ -27,6 +30,15 @@ MetricsCollector::~MetricsCollector() {
         fclose(m_log_file);
         m_log_file = nullptr;
     }
+
+    // Закрываем Research Mode файл
+    if (m_eeg_raw_file) {
+        fclose(m_eeg_raw_file);
+        m_eeg_raw_file = nullptr;
+    }
+
+    // Удаляем из session map
+    g_session_map.erase(m_session);
 
     // Удаляем из глобальных маппингов
     if (m_productivity) {
@@ -116,28 +128,37 @@ bool MetricsCollector::initialize() {
     }
 
     // Создание CEmotions
+    std::cout << "[MetricsCollector] 🎭 Создание CEmotions (speed=0.5, maxSpeed=1.0)..." << std::endl;
     m_emotions = clCEmotions_Create(m_session, 0.5, 1.0);
     if (m_emotions) {
+        std::cout << "[MetricsCollector] ✓ CEmotions создан, handle=" << m_emotions << std::endl;
         g_emotions_map[m_emotions] = this;
 
         // Callback для обновления метрик эмоций
         clCEmotionsDelegateEmotionalStatesUpdate emotions_delegate =
             clCEmotions_GetOnEmotionalStatesUpdateEvent(m_emotions);
         clCEmotionsDelegateEmotionalStatesUpdate_Set(emotions_delegate, onEmotionsUpdateCallback);
+        std::cout << "[MetricsCollector]   ✓ OnEmotionalStatesUpdate callback установлен" << std::endl;
 
         // КРИТИЧНО: Callbacks для инициализации и калибровки
         clCEmotionsDelegate initialized_delegate = clCEmotions_GetOnInitializedEvent(m_emotions);
         clCEmotionsDelegate_Set(initialized_delegate, onEmotionsInitializedCallback);
+        std::cout << "[MetricsCollector]   ✓ OnInitialized callback установлен" << std::endl;
 
         clCEmotionsDelegate calibrated_delegate = clCEmotions_GetOnCalibratedEvent(m_emotions);
         clCEmotionsDelegate_Set(calibrated_delegate, onEmotionsCalibratedCallback);
+        std::cout << "[MetricsCollector]   ✓ OnCalibrated callback установлен" << std::endl;
 
         clCEmotionsDelegateString error_delegate = clCEmotions_GetOnErrorEvent(m_emotions);
         clCEmotionsDelegateString_Set(error_delegate, onEmotionsErrorCallback);
+        std::cout << "[MetricsCollector]   ✓ OnError callback установлен" << std::endl;
 
         // КРИТИЧНО: Инициализация CEmotions (как CNFB требует Initialize)
-        std::cout << "[MetricsCollector] Инициализация CEmotions..." << std::endl;
+        std::cout << "[MetricsCollector] 🎭 Запуск инициализации CEmotions..." << std::endl;
+        std::cout << "[MetricsCollector]   (Ожидаем событие OnInitialized, затем автоматическая калибровка)" << std::endl;
         clCEmotions_Initialize(m_emotions, "");  // platformAddress пока пустой
+    } else {
+        std::cerr << "[MetricsCollector] ❌ ОШИБКА: clCEmotions_Create вернул nullptr!" << std::endl;
     }
 
     // Создание CCardio
@@ -155,8 +176,10 @@ bool MetricsCollector::initialize() {
     m_physiological = clCPhysiologicalStates_Create(m_session);
 
     // Создание калибратора NFB
+    std::cout << "[MetricsCollector] 🎯 Создание NFB Calibrator..." << std::endl;
     m_calibrator = clCNFBCalibrator_CreateOrGet(m_session);
     if (m_calibrator) {
+        std::cout << "[MetricsCollector] ✓ NFB Calibrator создан, handle=" << m_calibrator << std::endl;
         g_calibrator_map[m_calibrator] = this;
 
         // Устанавливаем callbacks калибратора
@@ -164,11 +187,16 @@ bool MetricsCollector::initialize() {
             clCNFBCalibrator_GetOnIndividualNFBCalibratedEvent(m_calibrator);
         clCNFBCalibratorDelegateIndividualNFBCalibrated_Set(calibrated_delegate,
                                                              onCalibrationCompleteCallback);
+        std::cout << "[MetricsCollector]   ✓ OnIndividualNFBCalibrated callback установлен" << std::endl;
 
         clCNFBCalibratorDelegateReadyToCalibrate ready_delegate =
             clCNFBCalibrator_GetOnReadyToCalibrate(m_calibrator);
         clCNFBCalibratorDelegateReadyToCalibrate_Set(ready_delegate,
                                                       onCalibratorReadyCallback);
+        std::cout << "[MetricsCollector]   ✓ OnReadyToCalibrate callback установлен" << std::endl;
+        std::cout << "[MetricsCollector]   (Ожидаем событие OnReadyToCalibrate...)" << std::endl;
+    } else {
+        std::cerr << "[MetricsCollector] ❌ ОШИБКА: clCNFBCalibrator_CreateOrGet вернул nullptr!" << std::endl;
     }
 
     return true;
@@ -181,34 +209,38 @@ bool MetricsCollector::startCalibration(int duration_seconds) {
     }
 
     if (!m_calibrator) {
-        m_calibrator = clCNFBCalibrator_CreateOrGet(m_session);
-        if (!m_calibrator) {
-            std::cerr << "[MetricsCollector] ✗ Не удалось создать калибратор" << std::endl;
-            return false;
-        }
-
-        // Регистрируем в глобальном маппинге
-        g_calibrator_map[m_calibrator] = this;
-
-        // Используем callback для завершения калибровки
-        clCNFBCalibratorDelegateIndividualNFBCalibrated calibrator_delegate =
-            clCNFBCalibrator_GetOnIndividualNFBCalibratedEvent(m_calibrator);
-        clCNFBCalibratorDelegateIndividualNFBCalibrated_Set(calibrator_delegate,
-                                                             onCalibrationCompleteCallback);
+        std::cerr << "[MetricsCollector] ✗ Калибровка: калибратор не создан (ошибка в initialize)" << std::endl;
+        return false;
     }
 
-    // Используем быструю калибровку
+    // ВАЖНО: Проверяем, готов ли калибратор
+    // Событие OnReadyToCalibrate должно произойти автоматически после инициализации
+    // Если оно еще не произошло, нужно подождать
+    if (!m_calibrator_ready) {
+        std::cout << "[MetricsCollector] ⏳ Калибратор еще не готов, ожидаем события OnReadyToCalibrate..." << std::endl;
+        std::cout << "[MetricsCollector]    Попробуйте запустить калибровку через несколько секунд" << std::endl;
+        return false;
+    }
+
+    // ПРИМЕЧАНИЕ: Фактический запуск калибровки происходит в onCalibratorReadyCallback()
+    // Здесь мы только повторно запускаем, если калибратор уже готов и калибровка не идет
+    if (m_calibrating) {
+        std::cout << "[MetricsCollector] ⚠ Калибровка уже выполняется" << std::endl;
+        return true;  // Уже идет
+    }
+
+    // Повторный запуск калибровки (если автокалибровка не сработала или нужно перекалибровать)
+    std::cout << "[MetricsCollector] Повторный запуск калибровки..." << std::endl;
     clCError error = clC_Error_OK;
-    m_calibrating = true;
     clCNFBCalibrator_CalibrateIndividualNFBQuick(m_calibrator, &error);
 
     if (error != clC_Error_OK) {
         std::cerr << "[MetricsCollector] ✗ Ошибка запуска калибровки (error: "
                   << error << ")" << std::endl;
-        m_calibrating = false;
         return false;
     }
 
+    m_calibrating = true;
     std::cout << "[MetricsCollector] ✓ Калибровка запущена" << std::endl;
     return true;
 }
@@ -230,6 +262,8 @@ void MetricsCollector::enableLogging(bool enabled, const std::string& file_path)
 
     if (enabled) {
         if (m_log_file) {
+            // Записываем summary перед закрытием предыдущего файла
+            writeSummaryToLog();
             fclose(m_log_file);
         }
 
@@ -243,13 +277,55 @@ void MetricsCollector::enableLogging(bool enabled, const std::string& file_path)
             char timestamp_buffer[64];
             std::strftime(timestamp_buffer, sizeof(timestamp_buffer), "%Y%m%d_%H%M%S", &tm_now);
             m_log_file_path = "session_" + std::string(timestamp_buffer) + ".csv";
+
+            // Сохраняем время начала для summary
+            char datetime_buffer[64];
+            std::strftime(datetime_buffer, sizeof(datetime_buffer), "%Y-%m-%d %H:%M:%S", &tm_now);
+            m_log_start_time = std::string(datetime_buffer);
         } else {
             m_log_file_path = file_path;
+
+            auto now = std::chrono::system_clock::now();
+            auto time_t_now = std::chrono::system_clock::to_time_t(now);
+            std::tm tm_now;
+            localtime_r(&time_t_now, &tm_now);
+            char datetime_buffer[64];
+            std::strftime(datetime_buffer, sizeof(datetime_buffer), "%Y-%m-%d %H:%M:%S", &tm_now);
+            m_log_start_time = std::string(datetime_buffer);
         }
+
+        // Инициализация счетчиков для summary
+        m_log_sample_count = 0;
+        m_accumulated_metrics = MetricsSnapshot();
 
         m_log_file = fopen(m_log_file_path.c_str(), "w");
 
         if (m_log_file) {
+            // Запись metadata в начало файла
+            fprintf(m_log_file, "# Bronnikov Exercise App - Metrics Export\n");
+            fprintf(m_log_file, "# Session Start: %s\n", m_log_start_time.c_str());
+            fprintf(m_log_file, "# File: %s\n", m_log_file_path.c_str());
+            fprintf(m_log_file, "#\n");
+            fprintf(m_log_file, "# Column Descriptions:\n");
+            fprintf(m_log_file, "# - timestamp: Seconds since session start\n");
+            fprintf(m_log_file, "# - alpha_power: Alpha brain wave power (8-12 Hz)\n");
+            fprintf(m_log_file, "# - beta_power: Beta brain wave power (13-30 Hz)\n");
+            fprintf(m_log_file, "# - theta_power: Theta brain wave power (4-8 Hz)\n");
+            fprintf(m_log_file, "# - alpha_beta_ratio: Ratio of alpha to beta power\n");
+            fprintf(m_log_file, "# - concentration: Concentration score (0-100)\n");
+            fprintf(m_log_file, "# - relaxation: Relaxation score (0-100)\n");
+            fprintf(m_log_file, "# - fatigue: Fatigue score (0-100)\n");
+            fprintf(m_log_file, "# - gravity: Gravity component score\n");
+            fprintf(m_log_file, "# - focus: Focus emotion score (0-100)\n");
+            fprintf(m_log_file, "# - chill: Chill/calm emotion score (0-100)\n");
+            fprintf(m_log_file, "# - stress: Stress emotion score (0-100)\n");
+            fprintf(m_log_file, "# - anger: Anger emotion score (0-100)\n");
+            fprintf(m_log_file, "# - self_control: Self-control score (0-100)\n");
+            fprintf(m_log_file, "# - heart_rate: Heart rate in BPM\n");
+            fprintf(m_log_file, "# - stress_index: Cardiovascular stress index\n");
+            fprintf(m_log_file, "# - iaf: Individual Alpha Frequency (Hz)\n");
+            fprintf(m_log_file, "#\n");
+
             // Запись заголовков CSV
             fprintf(m_log_file,
                 "timestamp,alpha_power,beta_power,theta_power,alpha_beta_ratio,"
@@ -260,9 +336,66 @@ void MetricsCollector::enableLogging(bool enabled, const std::string& file_path)
         }
     } else {
         if (m_log_file) {
+            // Записываем summary перед закрытием
+            writeSummaryToLog();
             fclose(m_log_file);
             m_log_file = nullptr;
         }
+    }
+}
+
+void MetricsCollector::enableResearchMode(bool enabled, const std::string& base_path) {
+    m_research_mode_enabled = enabled;
+
+    if (enabled) {
+        // Закрываем предыдущий файл если был открыт
+        if (m_eeg_raw_file) fclose(m_eeg_raw_file);
+
+        // Создаем имя файла
+        if (base_path.empty()) {
+            auto now = std::chrono::system_clock::now();
+            auto time_t_now = std::chrono::system_clock::to_time_t(now);
+            std::tm tm_now;
+            localtime_r(&time_t_now, &tm_now);
+
+            char timestamp_buffer[64];
+            std::strftime(timestamp_buffer, sizeof(timestamp_buffer), "%Y%m%d_%H%M%S", &tm_now);
+            m_research_base_path = "research_" + std::string(timestamp_buffer);
+        } else {
+            m_research_base_path = base_path;
+        }
+
+        std::string eeg_path = m_research_base_path + "_eeg_raw.csv";
+
+        // Открываем файл для записи только EEG
+        m_eeg_raw_file = fopen(eeg_path.c_str(), "w");
+
+        // Записываем заголовки
+        if (m_eeg_raw_file) {
+            fprintf(m_eeg_raw_file, "# EEG Raw Data Export\n");
+            fprintf(m_eeg_raw_file, "# Timestamp: %s\n", m_log_start_time.c_str());
+            fprintf(m_eeg_raw_file, "#\n");
+            fprintf(m_eeg_raw_file, "# Channels: F7, F3, Fp1, Fp2, F4, F8, T3, C3, Cz, C4, T4, T5, P3, Pz, P4, T6, O1, O2\n");
+            fprintf(m_eeg_raw_file, "#\n");
+            fprintf(m_eeg_raw_file, "timestamp,F7,F3,Fp1,Fp2,F4,F8,T3,C3,Cz,C4,T4,T5,P3,Pz,P4,T6,O1,O2\n");
+            fflush(m_eeg_raw_file);
+        }
+
+        // Устанавливаем callback для raw EEG данных
+        clCSessionDelegateSessionEEGData eeg_delegate = clCSession_GetOnSessionEEGDataEvent(m_session);
+        clCSessionDelegateSessionEEGData_Set(eeg_delegate, onEEGDataCallback);
+
+        std::cout << "[MetricsCollector] ✓ Research Mode включен (raw EEG)" << std::endl;
+        std::cout << "  EEG: " << eeg_path << std::endl;
+        std::cout << "  Примечание: PPG и MEMS данные доступны через CCardio и CMEMS классификаторы" << std::endl;
+    } else {
+        // Закрываем файл
+        if (m_eeg_raw_file) {
+            fclose(m_eeg_raw_file);
+            m_eeg_raw_file = nullptr;
+        }
+
+        std::cout << "[MetricsCollector] Research Mode выключен" << std::endl;
     }
 }
 
@@ -309,6 +442,8 @@ void MetricsCollector::updateProductivityMetrics(const clCNFBMetricsProductivity
         std::cout << "[DEBUG] Productivity data #" << prod_count
                   << " | Concentration: " << values->concentrationScore
                   << " | Relaxation: " << values->relaxationScore << std::endl;
+        std::cout << "[DEBUG]   m_current_metrics updated: concentration="
+                  << m_current_metrics.concentration << std::endl;
     }
 }
 
@@ -350,6 +485,23 @@ void MetricsCollector::updateEmotionMetrics(const clCEmotionalStates* states) {
     m_current_metrics.stress = states->stress;
     m_current_metrics.anger = states->anger;
     m_current_metrics.self_control = states->selfControl;
+
+    // DEBUG: Детальное логирование КАЖДОГО обновления эмоций
+    static int emotions_update_count = 0;
+    emotions_update_count++;
+
+    std::cout << "[MetricsCollector] updateEmotionMetrics #" << emotions_update_count
+              << " | Focus=" << states->focus
+              << " | Chill=" << states->chill
+              << " | Stress=" << states->stress
+              << " | Anger=" << states->anger
+              << " | SelfControl=" << states->selfControl << std::endl;
+
+    // Предупреждение если все значения = 0
+    if (states->focus == 0.0 && states->chill == 0.0 && states->stress == 0.0
+        && states->anger == 0.0 && states->selfControl == 0.0) {
+        std::cout << "[MetricsCollector] ⚠️ WARNING: Все эмоции = 0! Возможно калибровка еще не завершена." << std::endl;
+    }
 }
 
 void MetricsCollector::updateCardioMetrics(const clCCardioData& data) {
@@ -375,6 +527,70 @@ void MetricsCollector::writeToLog(const MetricsSnapshot& metrics) {
         metrics.concentration, metrics.relaxation, metrics.fatigue, metrics.gravity,
         metrics.focus, metrics.chill, metrics.stress, metrics.anger, metrics.self_control,
         metrics.heart_rate, metrics.stress_index, metrics.iaf);
+
+    fflush(m_log_file);
+
+    // Аккумулируем значения для summary
+    m_log_sample_count++;
+    m_accumulated_metrics.alpha_power += metrics.alpha_power;
+    m_accumulated_metrics.beta_power += metrics.beta_power;
+    m_accumulated_metrics.theta_power += metrics.theta_power;
+    m_accumulated_metrics.alpha_beta_ratio += metrics.alpha_beta_ratio;
+    m_accumulated_metrics.concentration += metrics.concentration;
+    m_accumulated_metrics.relaxation += metrics.relaxation;
+    m_accumulated_metrics.fatigue += metrics.fatigue;
+    m_accumulated_metrics.gravity += metrics.gravity;
+    m_accumulated_metrics.focus += metrics.focus;
+    m_accumulated_metrics.chill += metrics.chill;
+    m_accumulated_metrics.stress += metrics.stress;
+    m_accumulated_metrics.anger += metrics.anger;
+    m_accumulated_metrics.self_control += metrics.self_control;
+    m_accumulated_metrics.heart_rate += metrics.heart_rate;
+    m_accumulated_metrics.stress_index += metrics.stress_index;
+    m_accumulated_metrics.iaf += metrics.iaf;
+}
+
+void MetricsCollector::writeSummaryToLog() {
+    if (!m_log_file || m_log_sample_count == 0) return;
+
+    // Вычисляем средние значения
+    auto calc_average = [this](double accumulated) -> double {
+        return accumulated / m_log_sample_count;
+    };
+
+    // Получаем текущее время для расчета длительности
+    auto now = std::chrono::system_clock::now();
+    auto time_t_now = std::chrono::system_clock::to_time_t(now);
+    std::tm tm_now;
+    localtime_r(&time_t_now, &tm_now);
+    char end_time_buffer[64];
+    std::strftime(end_time_buffer, sizeof(end_time_buffer), "%Y-%m-%d %H:%M:%S", &tm_now);
+
+    // Записываем summary
+    fprintf(m_log_file, "\n");
+    fprintf(m_log_file, "# ==================== SESSION SUMMARY ====================\n");
+    fprintf(m_log_file, "# Session Start: %s\n", m_log_start_time.c_str());
+    fprintf(m_log_file, "# Session End: %s\n", end_time_buffer);
+    fprintf(m_log_file, "# Total Samples: %d\n", m_log_sample_count);
+    fprintf(m_log_file, "#\n");
+    fprintf(m_log_file, "# Average Values:\n");
+    fprintf(m_log_file, "# - Alpha Power: %.3f\n", calc_average(m_accumulated_metrics.alpha_power));
+    fprintf(m_log_file, "# - Beta Power: %.3f\n", calc_average(m_accumulated_metrics.beta_power));
+    fprintf(m_log_file, "# - Theta Power: %.3f\n", calc_average(m_accumulated_metrics.theta_power));
+    fprintf(m_log_file, "# - Alpha/Beta Ratio: %.3f\n", calc_average(m_accumulated_metrics.alpha_beta_ratio));
+    fprintf(m_log_file, "# - Concentration: %.3f\n", calc_average(m_accumulated_metrics.concentration));
+    fprintf(m_log_file, "# - Relaxation: %.3f\n", calc_average(m_accumulated_metrics.relaxation));
+    fprintf(m_log_file, "# - Fatigue: %.3f\n", calc_average(m_accumulated_metrics.fatigue));
+    fprintf(m_log_file, "# - Gravity: %.3f\n", calc_average(m_accumulated_metrics.gravity));
+    fprintf(m_log_file, "# - Focus: %.3f\n", calc_average(m_accumulated_metrics.focus));
+    fprintf(m_log_file, "# - Chill: %.3f\n", calc_average(m_accumulated_metrics.chill));
+    fprintf(m_log_file, "# - Stress: %.3f\n", calc_average(m_accumulated_metrics.stress));
+    fprintf(m_log_file, "# - Anger: %.3f\n", calc_average(m_accumulated_metrics.anger));
+    fprintf(m_log_file, "# - Self-Control: %.3f\n", calc_average(m_accumulated_metrics.self_control));
+    fprintf(m_log_file, "# - Heart Rate: %.3f BPM\n", calc_average(m_accumulated_metrics.heart_rate));
+    fprintf(m_log_file, "# - Stress Index: %.3f\n", calc_average(m_accumulated_metrics.stress_index));
+    fprintf(m_log_file, "# - IAF: %.3f Hz\n", calc_average(m_accumulated_metrics.iaf));
+    fprintf(m_log_file, "# ==========================================================\n");
 
     fflush(m_log_file);
 }
@@ -511,6 +727,14 @@ void MetricsCollector::onNFBModelTrainedCallback(clCNFB nfb) {
         if (alpha_result == clC_NFB_Success && beta_result == clC_NFB_Success && theta_result == clC_NFB_Success) {
             std::cout << "[MetricsCollector] ✓ Все feedback функции добавлены успешно!" << std::endl;
             std::cout << "[MetricsCollector]   Alpha/Beta/Theta метрики должны начать поступать" << std::endl;
+
+            // ПРИМЕЧАНИЕ: Калибровка NFB опциональна
+            // Приложение может работать и без неё, используя стандартные значения IAF
+            // Событие OnReadyToCalibrate не вызывается в текущей версии CapsuleAPI
+            // Поэтому помечаем калибратор как готовый для ручного запуска
+            collector->m_calibrator_ready = true;
+            std::cout << "[MetricsCollector] ℹ️  Калибратор готов для ручного запуска" << std::endl;
+            std::cout << "[MetricsCollector]    (Калибровка опциональна, приложение работает и без неё)" << std::endl;
         } else {
             std::cerr << "[MetricsCollector] ✗ Ошибка добавления feedback функций" << std::endl;
             std::cerr << "[MetricsCollector]   alpha: " << alpha_result
@@ -566,6 +790,43 @@ void MetricsCollector::onCalibrationCompleteCallback(clCNFBCalibrator calibrator
             collector->m_on_calibration_complete(false, 0.0);
         }
     }
+}
+
+// Research Mode callbacks для raw данных
+void MetricsCollector::onEEGDataCallback(clCSession session, clCEEGTimedData data) {
+    auto it = g_session_map.find(session);
+    if (it == g_session_map.end() || !it->second || !it->second->m_eeg_raw_file || !data) {
+        return;
+    }
+
+    MetricsCollector* collector = it->second;
+
+    // EEG данные - это матрица: channels x samples
+    int32_t channel_count = clCEEGTimedData_GetChannelsCount(data);
+    int32_t sample_count = clCEEGTimedData_GetSamplesCount(data);
+
+    // Экспортируем каждый сэмпл (по всем каналам)
+    for (int32_t sample_idx = 0; sample_idx < sample_count; ++sample_idx) {
+        // Timestamp в микросекундах, конвертируем в секунды
+        uint64_t timestamp_us = clCEEGTimedData_GetTimepoint(data, sample_idx);
+        double timestamp_sec = timestamp_us / 1000000.0;
+        fprintf(collector->m_eeg_raw_file, "%.6f", timestamp_sec);
+
+        // Записываем значения всех каналов для этого сэмпла
+        for (int32_t ch_idx = 0; ch_idx < channel_count && ch_idx < 18; ++ch_idx) {
+            float value = clCEEGTimedData_GetValue(data, ch_idx, sample_idx);
+            fprintf(collector->m_eeg_raw_file, ",%.6f", value);
+        }
+
+        // Заполняем недостающие каналы нулями (если меньше 18)
+        for (int32_t ch_idx = channel_count; ch_idx < 18; ++ch_idx) {
+            fprintf(collector->m_eeg_raw_file, ",0.0");
+        }
+
+        fprintf(collector->m_eeg_raw_file, "\n");
+    }
+
+    fflush(collector->m_eeg_raw_file);
 }
 
 } // namespace Bronnikov

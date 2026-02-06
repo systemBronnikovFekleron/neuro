@@ -40,6 +40,7 @@ class ExerciseController : public QObject
     Q_PROPERTY(int elapsedSeconds READ elapsedSeconds NOTIFY elapsedSecondsChanged)
     Q_PROPERTY(int totalSeconds READ totalSeconds NOTIFY totalSecondsChanged)
     Q_PROPERTY(int progressPercentage READ progressPercentage NOTIFY progressPercentageChanged)
+    Q_PROPERTY(int duration READ duration NOTIFY durationChanged)
 
     // Performance properties
     Q_PROPERTY(double currentSuccessRate READ currentSuccessRate NOTIFY currentSuccessRateChanged)
@@ -64,6 +65,7 @@ public:
     double currentSuccessRate() const { return m_currentSuccessRate; }
     double targetSuccessRate() const { return m_targetSuccessRate; }
     QVariantMap targetMetrics() const;
+    int duration() const { return m_duration; }
 
     // Setters для C++ интеграции
     void setSessionManager(Bronnikov::SessionManager* manager);
@@ -79,6 +81,10 @@ public:
     Q_INVOKABLE QVariantMap getExerciseResults() const;
     Q_INVOKABLE QVariantMap getSessionSummary() const;
 
+    // Duration management
+    Q_INVOKABLE void setDuration(int minutes);
+    Q_INVOKABLE void setRecommendedDuration(int practiceLevel, bool useMax = false);
+
 signals:
     // Property change signals
     void isActiveChanged();
@@ -92,6 +98,7 @@ signals:
     void currentSuccessRateChanged();
     void targetSuccessRateChanged();
     void targetMetricsChanged();
+    void durationChanged();
 
     // Event signals
     void exerciseStarted(const QString& name);
@@ -117,6 +124,7 @@ private:
     QString m_currentInstruction;
     int m_elapsedSeconds = 0;
     int m_totalSeconds = 0;
+    int m_duration = 5;  // Default duration in minutes
     double m_currentSuccessRate = 0.0;
     double m_targetSuccessRate = 70.0;  // Default target
 

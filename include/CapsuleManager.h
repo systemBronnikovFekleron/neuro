@@ -99,11 +99,13 @@ public:
     using DeviceCallback = std::function<void(const std::string& device_name, bool success)>;
     using ErrorCallback = std::function<void(const std::string& error)>;
     using BatteryCallback = std::function<void(int level)>;
+    using DevicesFoundCallback = std::function<void(const std::vector<std::string>& device_ids)>;
 
     void setOnConnectedCallback(ConnectionCallback callback) { m_on_connected = callback; }
     void setOnDeviceConnectedCallback(DeviceCallback callback) { m_on_device_connected = callback; }
     void setOnErrorCallback(ErrorCallback callback) { m_on_error = callback; }
     void setOnBatteryUpdateCallback(BatteryCallback callback) { m_on_battery_update = callback; }
+    void setOnDevicesFoundCallback(DevicesFoundCallback callback) { m_on_devices_found = callback; }
 
 private:
     clCClient m_client = nullptr;
@@ -118,6 +120,7 @@ private:
     DeviceCallback m_on_device_connected;
     ErrorCallback m_on_error;
     BatteryCallback m_on_battery_update;
+    DevicesFoundCallback m_on_devices_found;
 
     // Static callbacks для C API (без user_data - ограничение API)
     static void onClientConnectedCallback(clCClient client);

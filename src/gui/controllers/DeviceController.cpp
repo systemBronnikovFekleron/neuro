@@ -4,6 +4,7 @@
 #include "MetricsCollector.h"
 #include <QDebug>
 #include <QThread>
+#include <iostream>
 
 DeviceController::DeviceController(QObject* parent)
     : QObject(parent)
@@ -225,6 +226,13 @@ void DeviceController::startSession()
     m_isSessionActive = true;
     updateConnectionStatus();
 
+    // КРИТИЧНО: Запускаем таймер для постоянного вызова update() во время сессии
+    // Без этого callbacks от CapsuleAPI не будут вызываться!
+    if (!m_asyncTimer->isActive()) {
+        qDebug() << "🔄 Запуск update loop для обработки callbacks...";
+        m_asyncTimer->start();
+    }
+
     emit isSessionActiveChanged();
     emit sessionStarted();
 }
@@ -274,6 +282,7 @@ void DeviceController::startCalibration()
     qDebug() << "🎯 Запуск калибровки NFB (90 секунд)...";
     m_isCalibrating = true;
     m_calibrationProgress = 0;
+    m_operationStep = 0;  // КРИТИЧНО: Сброс счетчика для прогресса калибровки
 
     emit isCalibratingChanged();
     emit calibrationProgressChanged();
@@ -371,6 +380,15 @@ QVariantMap DeviceController::getCurrentMetrics() const
     metrics["stress"] = snapshot.stress;
     metrics["heartRate"] = snapshot.heart_rate;
 
+    // DEBUG: Логируем что возвращаем
+    static int metrics_call_count = 0;
+    if (++metrics_call_count % 50 == 0) {
+        qDebug() << "[DEBUG] getCurrentMetrics called #" << metrics_call_count
+                 << "alpha=" << snapshot.alpha_power
+                 << "beta=" << snapshot.beta_power
+                 << "theta=" << snapshot.theta_power;
+    }
+
     return metrics;
 }
 
@@ -453,9 +471,13 @@ void DeviceController::onAsyncUpdate()
         return;
     }
 
-    // Вызываем update() без блокировки UI
+    // КРИТИЧНО: Вызываем update() ВСЕГДА для обработки callbacks от CapsuleAPI
     m_capsuleManager->update();
-    m_operationStep++;
+
+    // Увеличиваем счетчик шагов если есть активная операция ИЛИ калибровка
+    if (m_currentOperation != AsyncOperation::None || m_isCalibrating) {
+        m_operationStep++;
+    }
 
     // НОВОЕ: Обновляем прогресс калибровки если активна
     if (m_isCalibrating && m_metricsCollector && m_metricsCollector->isCalibrating()) {
@@ -484,30 +506,21 @@ void DeviceController::onAsyncUpdate()
             break;
 
         case AsyncOperation::DiscoveringDevices:
-            if (m_operationStep > 20) {  // После 1 секунды запрашиваем список
-                auto devices = m_capsuleManager->discoverDevices();
+            if (m_operationStep == 1) {
+                // Первый шаг - запускаем асинхронный поиск
+                m_capsuleManager->discoverDevices();
+                qDebug() << "  Поиск запущен, ожидание результатов (callback)...";
+            } else if (m_operationStep > 100) {  // 5 секунд timeout
+                qDebug() << "⚠ Timeout при поиске устройств";
+                emit searchProgress("Timeout при поиске устройств");
                 stopAsyncOperation();
 
-                if (devices.empty()) {
-                    qDebug() << "❌ Устройства не найдены";
-                    emit searchProgress("Устройства не найдены");
-                    emit connectionFailed("No devices found");
-                } else {
-                    qDebug() << "✓ Найдено устройств:" << devices.size();
-                    for (const auto& device : devices) {
-                        QString deviceId = QString::fromStdString(device);
-                        emit deviceDiscovered(deviceId, deviceId);
-                        emit searchProgress(QString("Найдено: %1").arg(deviceId));
-                    }
-
-                    // Если есть целевое устройство или автоподключение, подключаемся к первому
-                    if (!devices.empty() && (m_targetDeviceId.isEmpty() || m_targetDeviceId == QString::fromStdString(devices[0]))) {
-                        m_targetDeviceId = QString::fromStdString(devices[0]);
-                        startAsyncOperation(AsyncOperation::ConnectingToDevice);
-                        emit connectionProgress(QString("Подключение к %1...").arg(m_targetDeviceId));
-                    }
+                // Если была команда подключения (есть targetDeviceId), сообщаем об ошибке
+                if (!m_targetDeviceId.isEmpty()) {
+                    emit connectionFailed("Device discovery timeout");
                 }
             }
+            // ВАЖНО: Callback от CapsuleManager вызовет deviceDiscovered() и stopAsyncOperation()
             break;
 
         case AsyncOperation::ConnectingToDevice:
@@ -594,5 +607,90 @@ void DeviceController::stopAsyncOperation()
 
 void DeviceController::setupCallbacks()
 {
-    // TODO: Setup CapsuleAPI callbacks
+    if (!m_capsuleManager) {
+        return;
+    }
+
+    // Callback при нахождении устройств
+    m_capsuleManager->setOnDevicesFoundCallback([this](const std::vector<std::string>& device_ids) {
+        qDebug() << "✓ [DeviceController] Обнаружено устройств:" << device_ids.size();
+
+        if (device_ids.empty()) {
+            qDebug() << "  Устройства не найдены";
+            emit searchProgress("Устройства не найдены");
+
+            if (!m_targetDeviceId.isEmpty()) {
+                emit connectionFailed("No devices found");
+            }
+
+            stopAsyncOperation();
+            return;
+        }
+
+        for (const auto& device_id : device_ids) {
+            // Эмитируем сигнал для каждого найденного устройства
+            // TODO: Получить реальное имя устройства из CapsuleAPI
+            QString qDeviceId = QString::fromStdString(device_id);
+            QString qDeviceName = QString("Neiry Device (%1)").arg(qDeviceId.left(8));
+
+            qDebug() << "  Найдено:" << qDeviceId;
+            emit deviceDiscovered(qDeviceId, qDeviceName);
+            emit searchProgress(QString("Найдено: %1").arg(qDeviceName));
+        }
+
+        // Если был запрос на подключение (есть targetDeviceId), подключаемся к первому устройству
+        if (!m_targetDeviceId.isEmpty()) {
+            // Находим нужное устройство или берем первое
+            bool found = false;
+            for (const auto& device_id : device_ids) {
+                QString qDeviceId = QString::fromStdString(device_id);
+                if (m_targetDeviceId.isEmpty() || m_targetDeviceId == qDeviceId) {
+                    m_targetDeviceId = qDeviceId;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found) {
+                stopAsyncOperation();
+                startAsyncOperation(AsyncOperation::ConnectingToDevice);
+                emit connectionProgress(QString("Подключение к %1...").arg(m_targetDeviceId));
+            } else {
+                qDebug() << "❌ Целевое устройство не найдено:" << m_targetDeviceId;
+                emit connectionFailed("Target device not found");
+                stopAsyncOperation();
+            }
+        } else {
+            // Просто поиск, останавливаем операцию
+            stopAsyncOperation();
+        }
+    });
+
+    // Callback при ошибке
+    m_capsuleManager->setOnErrorCallback([this](const std::string& error) {
+        QString qError = QString::fromStdString(error);
+        std::cerr << "[DeviceController] Ошибка: " << error << std::endl;
+        emit errorOccurred(qError);
+
+        // Останавливаем текущую операцию при ошибке
+        stopAsyncOperation();
+    });
+
+    // Callback при подключении к backend
+    m_capsuleManager->setOnConnectedCallback([this](bool success) {
+        if (success) {
+            std::cout << "[DeviceController] Подключено к Capsule backend" << std::endl;
+        } else {
+            std::cerr << "[DeviceController] Не удалось подключиться к Capsule backend" << std::endl;
+            emit connectionFailed("Не удалось подключиться к Capsule backend");
+        }
+    });
+
+    // Callback при изменении уровня батареи
+    m_capsuleManager->setOnBatteryUpdateCallback([this](int level) {
+        if (m_batteryLevel != level) {
+            m_batteryLevel = level;
+            emit batteryLevelChanged();
+        }
+    });
 }

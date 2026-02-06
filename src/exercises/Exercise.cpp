@@ -395,4 +395,9 @@ ComparisonResult Exercise::comparePhases() const {
     return result;
 }
 
+void Exercise::setRecommendedDuration(PracticeLevel level, bool use_max) {
+    auto [min_duration, max_duration] = getPracticeLevelDurationRange(level);
+    m_duration_minutes = use_max ? max_duration : min_duration;
+}
+
 } // namespace Bronnikov

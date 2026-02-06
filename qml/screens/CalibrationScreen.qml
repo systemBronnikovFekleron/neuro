@@ -9,8 +9,8 @@ Item {
     signal calibrationCompleted()
     signal calibrationCancelled()
 
-    // Подключаемся к DeviceController
-    property var deviceController: mainWindow ? mainWindow.deviceController : null
+    // ПРИМЕЧАНИЕ: deviceController доступен глобально через QML context (см. main_gui.cpp:132)
+    // Не нужно получать его через mainWindow
 
     // Локальные свойства
     property int remainingSeconds: 90
@@ -61,7 +61,7 @@ Item {
             // Инструкции
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 150
+                Layout.preferredHeight: 200  // УВЕЛИЧЕНО с 150 до 200 для 4 пунктов
                 color: Theme.surfaceColor
                 radius: Theme.radiusMedium
 
@@ -84,7 +84,7 @@ Item {
                         font.pixelSize: Theme.fontSizeBody
                         color: Theme.adaptiveTextSecondary
                         wrapMode: Text.WordWrap
-                        lineHeight: 1.5
+                        lineHeight: 1.4  // УМЕНЬШЕНО с 1.5 до 1.4 для компактности
                     }
                 }
             }
@@ -191,9 +191,12 @@ Item {
                     }
 
                     onClicked: {
+                        console.log("🔙 Кнопка Назад нажата!")
                         if (calibrationScreen.isCalibrating && deviceController) {
+                            console.log("  Отмена калибровки...")
                             deviceController.cancelCalibration()
                         }
+                        console.log("  Возврат назад...")
                         calibrationScreen.calibrationCancelled()
                     }
                 }

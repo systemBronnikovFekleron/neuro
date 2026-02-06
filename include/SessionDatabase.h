@@ -93,9 +93,9 @@ struct StageStats {
  * @brief Уровень практики пользователя
  */
 enum class PracticeLevel {
-    Beginner = 0,      // Начинающий: 2-5 минут
-    Intermediate = 1,  // Практикующий: 5-10 минут
-    Expert = 2         // Специалист: 10-20 минут
+    Beginner = 0,      // Новичок: 1-2 минуты
+    Intermediate = 1,  // Практикующий: 2-5 минут
+    Expert = 2         // Специалист: до 10 минут
 };
 
 /**
@@ -103,7 +103,7 @@ enum class PracticeLevel {
  */
 inline std::string getPracticeLevelName(PracticeLevel level) {
     switch (level) {
-        case PracticeLevel::Beginner:     return "Начинающий";
+        case PracticeLevel::Beginner:     return "Новичок";
         case PracticeLevel::Intermediate: return "Практикующий";
         case PracticeLevel::Expert:       return "Специалист";
         default:                          return "Неизвестно";
@@ -115,9 +115,9 @@ inline std::string getPracticeLevelName(PracticeLevel level) {
  */
 inline std::pair<int, int> getPracticeLevelDurationRange(PracticeLevel level) {
     switch (level) {
-        case PracticeLevel::Beginner:     return {2, 5};   // 2-5 минут
-        case PracticeLevel::Intermediate: return {5, 10};  // 5-10 минут
-        case PracticeLevel::Expert:       return {10, 20}; // 10-20 минут
+        case PracticeLevel::Beginner:     return {1, 2};   // 1-2 минуты
+        case PracticeLevel::Intermediate: return {2, 5};   // 2-5 минут
+        case PracticeLevel::Expert:       return {5, 10};  // до 10 минут
         default:                          return {5, 10};
     }
 }

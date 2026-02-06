@@ -93,6 +93,13 @@ public:
     void enableLogging(bool enabled, const std::string& file_path = "");
 
     /**
+     * @brief Включение/выключение Research Mode (raw EEG/PPG/MEMS)
+     * @param enabled Включить Research Mode
+     * @param base_path Базовый путь для файлов (без расширения)
+     */
+    void enableResearchMode(bool enabled, const std::string& base_path = "");
+
+    /**
      * @brief Сохранение текущего состояния как baseline
      *
      * Baseline используется для сравнения изменений метрик
@@ -143,6 +150,16 @@ private:
     std::string m_log_file_path;
     FILE* m_log_file = nullptr;
 
+    // Для вычисления summary
+    std::string m_log_start_time;
+    int m_log_sample_count = 0;
+    MetricsSnapshot m_accumulated_metrics;  // Сумма всех метрик для вычисления среднего
+
+    // Research Mode - raw EEG data logging
+    bool m_research_mode_enabled = false;
+    std::string m_research_base_path;
+    FILE* m_eeg_raw_file = nullptr;
+
     MetricsCallback m_on_metrics_update;
     CalibrationCallback m_on_calibration_complete;
 
@@ -152,6 +169,7 @@ private:
     void updateEmotionMetrics(const clCEmotionalStates* states);
     void updateCardioMetrics(const clCCardioData& data);
     void writeToLog(const MetricsSnapshot& metrics);
+    void writeSummaryToLog();
 
     // Static callbacks для C API
     static void onProductivityUpdateCallback(clCNFBMetricProductivity productivity,
@@ -168,6 +186,9 @@ private:
     static void onCalibratorReadyCallback(clCNFBCalibrator calibrator);
     static void onNFBInitializedCallback(clCNFB nfb);
     static void onNFBModelTrainedCallback(clCNFB nfb);
+
+    // Research Mode callback для raw EEG данных
+    static void onEEGDataCallback(clCSession session, clCEEGTimedData data);
 };
 
 } // namespace Bronnikov

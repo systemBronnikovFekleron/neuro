@@ -14,6 +14,7 @@ static bool g_discovery_complete = false;
 // Глобальные маппинги для связи handle → CapsuleManager
 static std::map<clCClient, CapsuleManager*> g_client_map;
 static std::map<clCDevice, CapsuleManager*> g_device_map;
+static std::map<clCDeviceLocator, CapsuleManager*> g_locator_map;
 
 CapsuleManager::CapsuleManager() {
 }
@@ -58,6 +59,7 @@ void CapsuleManager::disconnect() {
     }
 
     if (m_locator) {
+        g_locator_map.erase(m_locator);
         clCDeviceLocator_Destroy(m_locator);
         m_locator = nullptr;
     }
@@ -95,6 +97,9 @@ std::vector<std::string> CapsuleManager::discoverDevices() {
             return {};
         }
 
+        // Регистрация в глобальном map для callback
+        g_locator_map[m_locator] = this;
+
         // Установка callback для получения списка устройств
         clCDeviceLocatorDelegateDeviceInfoList devices_delegate =
             clCDeviceLocator_GetOnDevicesEvent(m_locator);
@@ -104,13 +109,10 @@ std::vector<std::string> CapsuleManager::discoverDevices() {
     // Запуск асинхронного поиска на 5 секунд
     clCDeviceLocator_RequestDevices(m_locator, 5);
 
-    // Ожидание результатов (блокирующий цикл)
-    for (int i = 0; i < 60 && !g_discovery_complete; ++i) {
-        update();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-
-    return g_discovered_devices;
+    // НОВОЕ: Возвращаем пустой вектор сразу, callback уведомит через m_on_devices_found
+    // Это убирает блокирующий цикл и делает операцию полностью асинхронной
+    std::cout << "[CapsuleManager] Поиск устройств запущен асинхронно (5 сек)" << std::endl;
+    return {};
 }
 
 bool CapsuleManager::connectToDevice(const std::string& device_id) {
@@ -282,6 +284,15 @@ void CapsuleManager::onDevicesFoundCallback(clCDeviceLocator locator, clCDeviceI
     }
 
     g_discovery_complete = true;
+
+    // Уведомляем через callback о найденных устройствах
+    auto it = g_locator_map.find(locator);
+    if (it != g_locator_map.end() && it->second) {
+        CapsuleManager* manager = it->second;
+        if (manager->m_on_devices_found) {
+            manager->m_on_devices_found(g_discovered_devices);
+        }
+    }
 }
 
 void CapsuleManager::onDeviceConnectionStateChangedCallback(clCDevice device, clCDeviceConnectionState state) {

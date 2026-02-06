@@ -197,7 +197,7 @@ Item {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: "Фаза " + (currentPhase + 1) + " / " + phases.length
                                 font.pixelSize: Theme.fontSizeSmall
-                                color: "#1a1a1a"
+                                color: Theme.adaptiveTextPrimary
                                 font.weight: Theme.fontWeightMedium
                             }
 
@@ -206,14 +206,14 @@ Item {
                                 text: phaseName
                                 font.pixelSize: Theme.fontSizeHeading2
                                 font.weight: Theme.fontWeightBold
-                                color: "#1a1a1a"
+                                color: Theme.adaptiveTextPrimary
                             }
 
                             Text {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: phaseDescription
                                 font.pixelSize: Theme.fontSizeSmall
-                                color: "#666666"
+                                color: Theme.adaptiveTextSecondary
                             }
                         }
                     }

@@ -323,4 +323,13 @@ std::shared_ptr<Exercise> ExerciseLibrary::getExerciseByStageOrder(
     return nullptr;
 }
 
+std::shared_ptr<Exercise> ExerciseLibrary::getExerciseByName(const std::string& name) const {
+    for (const auto& ex : m_exercises) {
+        if (ex->getName() == name) {
+            return ex;
+        }
+    }
+    return nullptr;
+}
+
 } // namespace Bronnikov

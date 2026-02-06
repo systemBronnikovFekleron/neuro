@@ -10,6 +10,19 @@ Item {
     signal exerciseSelected(int exerciseIndex)
     signal showStatistics()
 
+    // Stage progress data from sessionModel
+    property var currentStageProgress: {
+        var progress = sessionModel ? sessionModel.stageProgress : []
+        return progress.length > 0 ? progress[0] : null
+    }
+
+    Component.onCompleted: {
+        if (sessionModel) {
+            sessionModel.loadStageProgress()
+            sessionModel.loadStatistics()
+        }
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Theme.adaptiveBackground
@@ -33,14 +46,14 @@ Item {
                     spacing: Theme.paddingSmall
 
                     Text {
-                        text: "📊 Ваш прогресс"
+                        text: "Ваш прогресс"
                         font.pixelSize: Theme.fontSizeHeading3
                         font.weight: Theme.fontWeightMedium
                         color: Theme.adaptiveTextPrimary
                     }
 
                     Text {
-                        text: "Подготовительная ступень"
+                        text: currentStageProgress ? getStageName(currentStageProgress.stage) : "Подготовительная ступень"
                         font.pixelSize: Theme.fontSizeBody
                         color: Theme.adaptiveTextSecondary
                     }
@@ -50,7 +63,7 @@ Item {
                         Layout.fillWidth: true
                         from: 0
                         to: 100
-                        value: 80  // TODO: Получать из модели
+                        value: currentStageProgress ? currentStageProgress.completionPercentage : 0
 
                         background: Rectangle {
                             implicitWidth: 200
@@ -76,18 +89,18 @@ Item {
                         spacing: Theme.paddingMedium
 
                         Text {
-                            text: "15 сессий"
+                            text: (currentStageProgress ? currentStageProgress.totalSessions : 0) + " сессий"
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.adaptiveTextSecondary
                         }
 
                         Text {
-                            text: "•"
+                            text: "|"
                             color: Theme.adaptiveTextSecondary
                         }
 
                         Text {
-                            text: "Средний успех: 72%"
+                            text: "Средний успех: " + (currentStageProgress ? currentStageProgress.avgSuccessRate.toFixed(0) : 0) + "%"
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.adaptiveTextSecondary
                         }
@@ -126,7 +139,7 @@ Item {
                         Layout.preferredWidth: 500
                         text: "Упражнения для этой ступени еще не реализованы"
                         font.pixelSize: Theme.fontSizeHeading3
-                        color: "#1a1a1a"
+                        color: Theme.adaptiveTextPrimary
                         wrapMode: Text.WordWrap
                         horizontalAlignment: Text.AlignHCenter
                     }
@@ -136,7 +149,7 @@ Item {
                         Layout.preferredWidth: 600
                         text: "78 упражнений методики Бронникова • 4 ступени обучения"
                         font.pixelSize: Theme.fontSizeBody
-                        color: "#1a1a1a"
+                        color: Theme.adaptiveTextPrimary
                         wrapMode: Text.WordWrap
                         horizontalAlignment: Text.AlignHCenter
                     }
@@ -160,7 +173,7 @@ Item {
                     rightPadding: 40  // Место для стрелки
                     text: parent.displayText
                     font: parent.font
-                    color: "#1a1a1a"
+                    color: Theme.adaptiveTextPrimary
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
                 }
@@ -241,7 +254,7 @@ Item {
                                     text: model.name || ("Упражнение " + (index + 1))
                                     font.pixelSize: Theme.fontSizeBody
                                     font.weight: Theme.fontWeightMedium
-                                    color: "#1a1a1a"
+                                    color: Theme.adaptiveTextPrimary
                                     wrapMode: Text.WordWrap
                                     horizontalAlignment: Text.AlignHCenter
                                 }
@@ -281,4 +294,16 @@ Item {
             }  // Конец ScrollView
         }  // Конец ColumnLayout (главный)
     }  // Конец Rectangle
+
+    // Helper function for stage names
+    function getStageName(stage) {
+        switch (stage) {
+            case 0: return "Подготовительная ступень"
+            case 1: return "1-я ступень: Экология духа"
+            case 2: return "2-я ступень: Зрение вне глаз"
+            case 3: return "3-я ступень: Экран ЛБК"
+            case 4: return "4-я ступень: Радарное видение"
+            default: return "Ступень " + stage
+        }
+    }
 }  // Конец Item

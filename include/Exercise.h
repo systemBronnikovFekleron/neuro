@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MetricsCollector.h"
+#include "SessionDatabase.h"
 #include <string>
 #include <vector>
 #include <functional>
@@ -268,6 +269,21 @@ public:
     void setOnPhaseChangedCallback(PhaseCallback callback) { m_on_phase_changed = callback; }
     void setOnNewInstructionCallback(InstructionCallback callback) { m_on_new_instruction = callback; }
     void setOnProgressUpdateCallback(ProgressCallback callback) { m_on_progress_update = callback; }
+
+    /**
+     * @brief Установить длительность упражнения вручную
+     * @param minutes Длительность в минутах
+     */
+    void setDuration(int minutes) {
+        m_duration_minutes = minutes;
+    }
+
+    /**
+     * @brief Установить рекомендуемую длительность на основе уровня практики
+     * @param level Уровень практики пользователя
+     * @param use_max Использовать максимум диапазона (true) или минимум (false)
+     */
+    void setRecommendedDuration(PracticeLevel level, bool use_max = false);
 
 protected:
     std::string m_name;

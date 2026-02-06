@@ -36,6 +36,19 @@ class SessionModel : public QObject
     // Recent sessions
     Q_PROPERTY(QVariantList recentSessions READ recentSessions NOTIFY recentSessionsChanged)
 
+    // User profile properties
+    Q_PROPERTY(QString userName READ userName NOTIFY userProfileChanged)
+    Q_PROPERTY(int practiceLevel READ practiceLevel NOTIFY userProfileChanged)
+    Q_PROPERTY(double iaf READ iaf NOTIFY userProfileChanged)
+    Q_PROPERTY(double iapf READ iapf NOTIFY userProfileChanged)
+    Q_PROPERTY(QString lastCalibrationDate READ lastCalibrationDate NOTIFY userProfileChanged)
+    Q_PROPERTY(double baselineAlpha READ baselineAlpha NOTIFY userProfileChanged)
+    Q_PROPERTY(double baselineBeta READ baselineBeta NOTIFY userProfileChanged)
+    Q_PROPERTY(double baselineTheta READ baselineTheta NOTIFY userProfileChanged)
+    Q_PROPERTY(double baselineConcentration READ baselineConcentration NOTIFY userProfileChanged)
+    Q_PROPERTY(double baselineRelaxation READ baselineRelaxation NOTIFY userProfileChanged)
+    Q_PROPERTY(double baselineHeartRate READ baselineHeartRate NOTIFY userProfileChanged)
+
 public:
     explicit SessionModel(QObject* parent = nullptr);
     ~SessionModel() override;
@@ -49,6 +62,19 @@ public:
     QVariantList stageProgress() const;
     QVariantList recentSessions() const;
 
+    // User profile getters
+    QString userName() const { return m_userName; }
+    int practiceLevel() const { return m_practiceLevel; }
+    double iaf() const { return m_iaf; }
+    double iapf() const { return m_iapf; }
+    QString lastCalibrationDate() const { return m_lastCalibrationDate; }
+    double baselineAlpha() const { return m_baselineAlpha; }
+    double baselineBeta() const { return m_baselineBeta; }
+    double baselineTheta() const { return m_baselineTheta; }
+    double baselineConcentration() const { return m_baselineConcentration; }
+    double baselineRelaxation() const { return m_baselineRelaxation; }
+    double baselineHeartRate() const { return m_baselineHeartRate; }
+
     // Q_INVOKABLE methods
     Q_INVOKABLE void loadStatistics(const QString& userId = "default");
     Q_INVOKABLE void loadStageProgress(const QString& userId = "default");
@@ -58,13 +84,24 @@ public:
     Q_INVOKABLE bool saveSession(const QVariantMap& sessionData);
     Q_INVOKABLE QVariantMap getSessionById(int sessionId) const;
 
+    // Exercise statistics for StatisticsScreen
+    Q_INVOKABLE QVariantList getExercisesStatistics(const QString& userId = "default");
+    Q_INVOKABLE QVariantList getSessionsByDay(int daysBack = 30, const QString& userId = "default");
+
     Q_INVOKABLE void setDatabase(void* database);  // Accepts SessionDatabase*
+
+    // User profile methods
+    Q_INVOKABLE void loadUserProfile(const QString& userId = "default");
+    Q_INVOKABLE void setPracticeLevel(int level, const QString& userId = "default");
+    Q_INVOKABLE void updateCalibration(double iaf, double iapf);
+    Q_INVOKABLE void updateBaseline(const QVariantMap& baselineMetrics);
 
 signals:
     void statisticsChanged();
     void stageProgressChanged();
     void recentSessionsChanged();
     void sessionSaved(int sessionId);
+    void userProfileChanged();
 
 private:
     // Statistics data
@@ -87,6 +124,19 @@ private:
 
     // Recent sessions
     std::vector<QVariantMap> m_recentSessionsData;
+
+    // User profile data
+    QString m_userName;
+    int m_practiceLevel = 0;  // 0=Beginner, 1=Intermediate, 2=Expert
+    QString m_lastCalibrationDate;
+    double m_iaf = 0.0;
+    double m_iapf = 0.0;
+    double m_baselineAlpha = 0.0;
+    double m_baselineBeta = 0.0;
+    double m_baselineTheta = 0.0;
+    double m_baselineConcentration = 0.0;
+    double m_baselineRelaxation = 0.0;
+    double m_baselineHeartRate = 0.0;
 
     // Reference to C++ SessionDatabase
     Bronnikov::SessionDatabase* m_database = nullptr;

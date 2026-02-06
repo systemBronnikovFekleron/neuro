@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include <string>
 
 namespace Bronnikov {
 
@@ -47,6 +48,11 @@ public:
      * @brief НОВОЕ: Получить упражнение по stage и order
      */
     std::shared_ptr<Exercise> getExerciseByStageOrder(ExerciseStage stage, int order) const;
+
+    /**
+     * @brief Получить упражнение по имени
+     */
+    std::shared_ptr<Exercise> getExerciseByName(const std::string& name) const;
 
     /**
      * @brief Получить количество упражнений

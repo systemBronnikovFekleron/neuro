@@ -112,6 +112,15 @@ void MetricsModel::setDeviceController(QObject* controller)
 
 void MetricsModel::updateMetrics()
 {
+    // DEBUG
+    static int update_count = 0;
+    if (++update_count % 50 == 0) {
+        qDebug() << "[MetricsModel] updateMetrics called #" << update_count
+                 << "demoMode=" << m_demoMode
+                 << "hasDeviceController=" << (m_deviceController != nullptr)
+                 << "isSessionActive=" << (m_deviceController ? m_deviceController->isSessionActive() : false);
+    }
+
     // НОВОЕ: Проверяем демо-режим
     if (m_demoMode) {
         generateDemoMetrics();
@@ -150,40 +159,64 @@ void MetricsModel::updateMetrics()
 
 void MetricsModel::updateFromSnapshot(const Bronnikov::MetricsSnapshot& snapshot)
 {
+    // DEBUG
+    static int snapshot_count = 0;
+    if (++snapshot_count % 50 == 0) {
+        qDebug() << "[MetricsModel] updateFromSnapshot #" << snapshot_count
+                 << "alpha=" << snapshot.alpha_power
+                 << "beta=" << snapshot.beta_power
+                 << "theta=" << snapshot.theta_power
+                 << "m_alpha=" << m_alpha << " (old)";
+    }
+
     // Update current values
-    if (m_alpha != snapshot.alpha_power) {
-        m_alpha = snapshot.alpha_power;
+    // ВАЖНО: Масштабируем значения 0.0-1.0 → 0-100 для отображения в UI
+    double alphaScaled = snapshot.alpha_power * 100.0;
+    if (m_alpha != alphaScaled) {
+        m_alpha = alphaScaled;
         addToHistory(m_alphaHistory, m_alpha);
         emit alphaChanged();
         emit alphaHistoryChanged();
+
+        // DEBUG
+        if (snapshot_count % 50 == 0) {
+            qDebug() << "  [MetricsModel] EMIT alphaChanged! new value=" << m_alpha;
+        }
     }
 
-    if (m_beta != snapshot.beta_power) {
-        m_beta = snapshot.beta_power;
+    double betaScaled = snapshot.beta_power * 100.0;
+    if (m_beta != betaScaled) {
+        m_beta = betaScaled;
         addToHistory(m_betaHistory, m_beta);
         emit betaChanged();
         emit betaHistoryChanged();
     }
 
-    if (m_theta != snapshot.theta_power) {
-        m_theta = snapshot.theta_power;
+    double thetaScaled = snapshot.theta_power * 100.0;
+    if (m_theta != thetaScaled) {
+        m_theta = thetaScaled;
         addToHistory(m_thetaHistory, m_theta);
         emit thetaChanged();
         emit thetaHistoryChanged();
     }
 
-    if (m_concentration != snapshot.concentration) {
-        m_concentration = snapshot.concentration;
+    // ВАЖНО: Concentration/Relaxation/Fatigue приходят в диапазоне ~0-5
+    // Масштабируем в 0-100 для отображения (×20)
+    double concentrationScaled = snapshot.concentration * 20.0;
+    if (m_concentration != concentrationScaled) {
+        m_concentration = concentrationScaled;
         emit concentrationChanged();
     }
 
-    if (m_relaxation != snapshot.relaxation) {
-        m_relaxation = snapshot.relaxation;
+    double relaxationScaled = snapshot.relaxation * 20.0;
+    if (m_relaxation != relaxationScaled) {
+        m_relaxation = relaxationScaled;
         emit relaxationChanged();
     }
 
-    if (m_fatigue != snapshot.fatigue) {
-        m_fatigue = snapshot.fatigue;
+    double fatigueScaled = snapshot.fatigue * 20.0;
+    if (m_fatigue != fatigueScaled) {
+        m_fatigue = fatigueScaled;
         emit fatigueChanged();
     }
 

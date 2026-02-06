@@ -6,6 +6,18 @@ import "../styles"
 Item {
     signal back()
 
+    // Property для доступа к SessionModel и DeviceController
+    property var sessionModel: null
+    property var deviceController: null
+
+    Component.onCompleted: {
+        if (sessionModel) {
+            sessionModel.loadUserProfile("default")
+            sessionModel.loadStatistics("default")
+            sessionModel.loadRecentSessions(5, "default")
+        }
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Theme.adaptiveBackground
@@ -74,7 +86,7 @@ Item {
                                 text: "📋 Основная информация"
                                 font.pixelSize: Theme.fontSizeHeading3
                                 font.weight: Theme.fontWeightMedium
-                                color: "#1a1a1a"
+                                color: Theme.adaptiveTextPrimary
                             }
 
                             RowLayout {
@@ -83,13 +95,13 @@ Item {
                                 Text {
                                     text: "Имя:"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                     Layout.preferredWidth: 150
                                 }
                                 Text {
-                                    text: "Пользователь"  // TODO: получать из SessionModel
+                                    text: sessionModel ? sessionModel.userName : "Пользователь"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#1a1a1a"
+                                    color: Theme.adaptiveTextPrimary
                                 }
                             }
 
@@ -99,13 +111,13 @@ Item {
                                 Text {
                                     text: "Дата регистрации:"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                     Layout.preferredWidth: 150
                                 }
                                 Text {
-                                    text: "2024-01-15"  // TODO: получать из SessionModel
+                                    text: sessionModel && sessionModel.firstSessionDate ? sessionModel.firstSessionDate.substring(0, 10) : "Нет данных"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#1a1a1a"
+                                    color: Theme.adaptiveTextPrimary
                                 }
                             }
 
@@ -115,13 +127,13 @@ Item {
                                 Text {
                                     text: "Всего сессий:"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                     Layout.preferredWidth: 150
                                 }
                                 Text {
                                     text: sessionModel ? sessionModel.totalSessions : "0"
                                     font.pixelSize: Theme.fontSizeBody
-                                    color: "#1a1a1a"
+                                    color: Theme.adaptiveTextPrimary
                                 }
                             }
                         }
@@ -146,15 +158,17 @@ Item {
                                     text: "📊 Baseline метрики"
                                     font.pixelSize: Theme.fontSizeHeading3
                                     font.weight: Theme.fontWeightMedium
-                                    color: "#1a1a1a"
+                                    color: Theme.adaptiveTextPrimary
                                 }
 
                                 Item { Layout.fillWidth: true }
 
                                 Text {
-                                    text: "Обновлено: 2024-02-04"  // TODO: дата последней калибровки
+                                    text: sessionModel && sessionModel.lastCalibrationDate ?
+                                          "Обновлено: " + sessionModel.lastCalibrationDate :
+                                          "Калибровка не проводилась"
                                     font.pixelSize: Theme.fontSizeSmall
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                 }
                             }
 
@@ -167,16 +181,16 @@ Item {
                                 // Alpha
                                 Text {
                                     text: "Alpha:"
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                 }
                                 ProgressBar {
                                     Layout.fillWidth: true
                                     from: 0
                                     to: 100
-                                    value: 45  // TODO: получать из SessionModel baseline
+                                    value: sessionModel ? sessionModel.baselineAlpha : 0
                                 }
                                 Text {
-                                    text: "45%"
+                                    text: sessionModel ? sessionModel.baselineAlpha.toFixed(1) + "%" : "0%"
                                     font.family: Theme.fontFamilyMono
                                     color: Theme.alphaColor
                                 }
@@ -184,16 +198,16 @@ Item {
                                 // Beta
                                 Text {
                                     text: "Beta:"
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                 }
                                 ProgressBar {
                                     Layout.fillWidth: true
                                     from: 0
                                     to: 100
-                                    value: 35
+                                    value: sessionModel ? sessionModel.baselineBeta : 0
                                 }
                                 Text {
-                                    text: "35%"
+                                    text: sessionModel ? sessionModel.baselineBeta.toFixed(1) + "%" : "0%"
                                     font.family: Theme.fontFamilyMono
                                     color: Theme.betaColor
                                 }
@@ -201,16 +215,16 @@ Item {
                                 // Theta
                                 Text {
                                     text: "Theta:"
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                 }
                                 ProgressBar {
                                     Layout.fillWidth: true
                                     from: 0
                                     to: 100
-                                    value: 20
+                                    value: sessionModel ? sessionModel.baselineTheta : 0
                                 }
                                 Text {
-                                    text: "20%"
+                                    text: sessionModel ? sessionModel.baselineTheta.toFixed(1) + "%" : "0%"
                                     font.family: Theme.fontFamilyMono
                                     color: Theme.thetaColor
                                 }
@@ -218,23 +232,27 @@ Item {
                                 // IAF
                                 Text {
                                     text: "IAF:"
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                 }
                                 Item { Layout.fillWidth: true }
                                 Text {
-                                    text: "10.2 Hz"  // TODO: из SessionModel
+                                    text: sessionModel && sessionModel.iaf > 0 ?
+                                          sessionModel.iaf.toFixed(1) + " Hz" :
+                                          "Не откалибровано"
                                     font.family: Theme.fontFamilyMono
-                                    color: "#1a1a1a"
+                                    color: Theme.adaptiveTextPrimary
                                 }
 
                                 // Heart Rate
                                 Text {
                                     text: "Пульс (покой):"
-                                    color: "#666666"
+                                    color: Theme.adaptiveTextSecondary
                                 }
                                 Item { Layout.fillWidth: true }
                                 Text {
-                                    text: "72 BPM"
+                                    text: sessionModel && sessionModel.baselineHeartRate > 0 ?
+                                          Math.round(sessionModel.baselineHeartRate) + " BPM" :
+                                          "Нет данных"
                                     font.family: Theme.fontFamilyMono
                                     color: Theme.heartRateColor
                                 }
@@ -262,9 +280,15 @@ Item {
                                 }
 
                                 onClicked: {
-                                    // TODO: запустить калибровку
-                                    console.log("Запуск калибровки...")
+                                    if (deviceController) {
+                                        deviceController.startCalibration()
+                                    } else {
+                                        console.log("DeviceController не доступен")
+                                    }
                                 }
+
+                                // Кнопка доступна только когда есть активная сессия
+                                enabled: deviceController && deviceController.isSessionActive
                             }
                         }
                     }
@@ -285,7 +309,7 @@ Item {
                                 text: "📅 Последние сессии"
                                 font.pixelSize: Theme.fontSizeHeading3
                                 font.weight: Theme.fontWeightMedium
-                                color: "#1a1a1a"
+                                color: Theme.adaptiveTextPrimary
                             }
 
                             ListView {
@@ -294,7 +318,7 @@ Item {
                                 spacing: 8
                                 clip: true
 
-                                model: 5  // TODO: получать из SessionModel
+                                model: sessionModel ? sessionModel.recentSessions : []
 
                                 delegate: Rectangle {
                                     width: ListView.view.width
@@ -306,21 +330,21 @@ Item {
                                         spacing: Theme.paddingMedium
 
                                         Text {
-                                            text: "2024-02-0" + (5 - index)
+                                            text: modelData.timestamp ? modelData.timestamp.substring(0, 10) : ""
                                             font.pixelSize: Theme.fontSizeSmall
-                                            color: "#666666"
+                                            color: Theme.adaptiveTextSecondary
                                             Layout.preferredWidth: 100
                                         }
 
                                         Text {
-                                            text: "Энергетический шар"
+                                            text: modelData.exerciseName || ""
                                             font.pixelSize: Theme.fontSizeSmall
-                                            color: "#1a1a1a"
+                                            color: Theme.adaptiveTextPrimary
                                             Layout.fillWidth: true
                                         }
 
                                         Text {
-                                            text: (70 + index * 3) + "%"
+                                            text: modelData.successRate ? modelData.successRate.toFixed(0) + "%" : "0%"
                                             font.pixelSize: Theme.fontSizeSmall
                                             font.family: Theme.fontFamilyMono
                                             color: Theme.successColor
