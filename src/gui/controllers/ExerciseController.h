@@ -71,6 +71,7 @@ public:
     void setSessionManager(Bronnikov::SessionManager* manager);
     void setMetricsCollector(Bronnikov::MetricsCollector* collector);
     void setDatabase(Bronnikov::SessionDatabase* database);
+    void setCurrentUserId(const QString& userId) { m_currentUserId = userId; }
 
     // Q_INVOKABLE methods
     Q_INVOKABLE void startExercise(const QString& exerciseName);
@@ -132,6 +133,7 @@ private:
     Bronnikov::SessionManager* m_sessionManager = nullptr;
     Bronnikov::MetricsCollector* m_metricsCollector = nullptr;
     Bronnikov::SessionDatabase* m_database = nullptr;
+    QString m_currentUserId = "default";  // Текущий пользователь
 
     // Current exercise instance
     std::shared_ptr<Bronnikov::Exercise> m_currentExercise;

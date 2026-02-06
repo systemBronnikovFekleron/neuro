@@ -147,6 +147,12 @@ int main(int argc, char *argv[])
     QObject::connect(deviceController, &DeviceController::calibrationCompleted,
                      sessionModel, &SessionModel::updateCalibration);
 
+    // Синхронизация текущего пользователя с ExerciseController
+    QObject::connect(sessionModel, &SessionModel::userProfileChanged,
+                     exerciseController, [exerciseController, sessionModel]() {
+                         exerciseController->setCurrentUserId(sessionModel->currentUserId());
+                     });
+
     // ============================================================================
     // Регистрация моделей и контроллеров в QML контексте
     // ============================================================================

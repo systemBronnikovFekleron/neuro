@@ -210,7 +210,7 @@ void ExerciseController::saveSessionToDatabase()
         return;
 
     Bronnikov::SessionRecord record;
-    record.user_id = "default";
+    record.user_id = m_currentUserId.toStdString();
     record.exercise_name = m_exerciseName.toStdString();
     record.duration_seconds = m_elapsedSeconds;
     record.success_rate = m_currentSuccessRate;
