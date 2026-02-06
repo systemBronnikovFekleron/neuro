@@ -196,13 +196,14 @@ Item {
 
                     Item { height: Theme.paddingLarge }
 
-                    // ОБНОВЛЕНО: Фаза упражнения (трехфазная методология Бронникова)
+                    // Фаза упражнения (трехфазная методология Бронникова)
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 140
-                        color: phaseColor
-                        opacity: 0.15
+                        color: Qt.rgba(phaseColor.r, phaseColor.g, phaseColor.b, 0.15)
                         radius: Theme.radiusMedium
+                        border.color: phaseColor
+                        border.width: 1
 
                         ColumnLayout {
                             anchors.centerIn: parent
@@ -381,288 +382,209 @@ Item {
                 }
             }
 
-            // Правая панель - Метрики и инструкции
+            // Правая панель - 3 строки: График, Метрики, Инструкции
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                spacing: Theme.paddingMedium
+                spacing: Theme.paddingSmall
 
-                // Панель метрик
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 420  // Увеличено до 420 чтобы вместить ВСЕ метрики
-                    color: Theme.surfaceColor
-                    radius: Theme.radiusMedium
-
-                    GridLayout {
-                        anchors.fill: parent
-                        anchors.margins: Theme.paddingMedium
-                        columns: 3
-                        rowSpacing: 4  // Уменьшено для компактности
-                        columnSpacing: Theme.paddingMedium
-
-                        Text {
-                            text: "📊 Метрики"
-                            font.pixelSize: Theme.fontSizeHeading3
-                            font.weight: Theme.fontWeightMedium
-                            color: Theme.adaptiveTextPrimary
-                            Layout.columnSpan: 3
-                        }
-
-                        // Alpha
-                        Text {
-                            text: "Alpha"
-                            color: Theme.adaptiveTextSecondary
-                            font.pixelSize: Theme.fontSizeSmall
-                        }
-                        MetricsProgressBar {
-                            Layout.fillWidth: true
-                            from: 0; to: 100
-                            value: metricsModel ? metricsModel.alpha : 0
-                            customColor: Theme.alphaColor
-                        }
-                        Text {
-                            text: metricsModel ? Math.round(metricsModel.alpha) + "%" : "0%"
-                            font.family: Theme.fontFamilyMono
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.alphaColor
-                        }
-
-                        // Beta
-                        Text {
-                            text: "Beta"
-                            color: Theme.adaptiveTextSecondary
-                            font.pixelSize: Theme.fontSizeSmall
-                        }
-                        MetricsProgressBar {
-                            Layout.fillWidth: true
-                            from: 0; to: 100
-                            value: metricsModel ? metricsModel.beta : 0
-                            customColor: Theme.betaColor
-                        }
-                        Text {
-                            text: metricsModel ? Math.round(metricsModel.beta) + "%" : "0%"
-                            font.family: Theme.fontFamilyMono
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.betaColor
-                        }
-
-                        // Theta
-                        Text {
-                            text: "Theta"
-                            color: Theme.adaptiveTextSecondary
-                            font.pixelSize: Theme.fontSizeSmall
-                        }
-                        MetricsProgressBar {
-                            Layout.fillWidth: true
-                            from: 0; to: 100
-                            value: metricsModel ? metricsModel.theta : 0
-                            customColor: Theme.thetaColor
-                        }
-                        Text {
-                            text: metricsModel ? Math.round(metricsModel.theta) + "%" : "0%"
-                            font.family: Theme.fontFamilyMono
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.thetaColor
-                        }
-
-                        Item { height: Theme.paddingSmall; Layout.columnSpan: 3 }
-
-                        // Concentration (с цветовыми зонами)
-                        Text {
-                            text: "Концентрация"
-                            color: Theme.adaptiveTextSecondary
-                            font.pixelSize: Theme.fontSizeSmall
-                        }
-                        MetricsProgressBar {
-                            Layout.fillWidth: true
-                            from: 0; to: 100
-                            value: metricsModel ? metricsModel.concentration : 0
-                            // Без customColor - используются автоматические цветовые зоны
-                        }
-                        Text {
-                            text: metricsModel ? Math.round(metricsModel.concentration) + "%" : "0%"
-                            font.family: Theme.fontFamilyMono
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.concentrationColor
-                        }
-
-                        // Relaxation (с цветовыми зонами)
-                        Text {
-                            text: "Релаксация"
-                            color: Theme.adaptiveTextSecondary
-                            font.pixelSize: Theme.fontSizeSmall
-                        }
-                        MetricsProgressBar {
-                            Layout.fillWidth: true
-                            from: 0; to: 100
-                            value: metricsModel ? metricsModel.relaxation : 0
-                            // Без customColor - используются автоматические цветовые зоны
-                        }
-                        Text {
-                            text: metricsModel ? Math.round(metricsModel.relaxation) + "%" : "0%"
-                            font.family: Theme.fontFamilyMono
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.relaxationColor
-                        }
-
-                        Item { height: Theme.paddingSmall; Layout.columnSpan: 3 }
-
-                        // Heart Rate
-                        Text {
-                            text: "Пульс"
-                            color: Theme.adaptiveTextSecondary
-                            font.pixelSize: Theme.fontSizeSmall
-                        }
-                        Item { Layout.fillWidth: true }
-                        Text {
-                            text: metricsModel ? metricsModel.heartRate + " BPM" : "0 BPM"
-                            font.family: Theme.fontFamilyMono
-                            font.pixelSize: Theme.fontSizeHeading3
-                            color: Theme.heartRateColor
-                        }
-
-                        // Success Rate (с цветовыми зонами)
-                        Text {
-                            text: "Success Rate"
-                            color: Theme.adaptiveTextSecondary
-                            font.pixelSize: Theme.fontSizeSmall
-                        }
-                        MetricsProgressBar {
-                            Layout.fillWidth: true
-                            from: 0; to: 100
-                            value: metricsModel ? metricsModel.successRate : 0
-                            // Без customColor - используются автоматические цветовые зоны
-                        }
-                        Text {
-                            text: metricsModel ? Math.round(metricsModel.successRate) + "%" : "0%"
-                            font.family: Theme.fontFamilyMono
-                            font.weight: Theme.fontWeightBold
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: {
-                                var rate = metricsModel ? metricsModel.successRate : 0
-                                if (rate >= 70) return Theme.successColor
-                                else if (rate >= 40) return Theme.warningColor
-                                else return Theme.errorColor
-                            }
-                        }
-                    }
-                }
-
-                // ОБНОВЛЕНО: Инструкции с цветом текущей фазы
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 140
-                    color: Theme.surfaceColor
-                    border.color: phaseColor
-                    border.width: 2
-                    radius: Theme.radiusMedium
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: Theme.paddingMedium
-                        spacing: Theme.paddingSmall
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: Theme.paddingSmall
-
-                            Text {
-                                text: phaseIcon
-                                font.pixelSize: 24
-                            }
-
-                            Text {
-                                text: "Инструкция (" + phaseName + "):"
-                                font.pixelSize: Theme.fontSizeHeading3
-                                font.weight: Theme.fontWeightMedium
-                                color: Theme.adaptiveTextPrimary
-                                Layout.fillWidth: true
-                            }
-
-                            // Индикатор паузы
-                            Rectangle {
-                                width: 80
-                                height: 24
-                                radius: 12
-                                color: isPaused ? Theme.warningColor : "transparent"
-                                visible: isPaused
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "⏸️ ПАУЗА"
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    font.weight: Theme.fontWeightBold
-                                    color: "white"
-                                }
-                            }
-                        }
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: currentInstruction
-                            font.pixelSize: Theme.fontSizeBody
-                            color: Theme.adaptiveTextPrimary
-                            wrapMode: Text.WordWrap
-                        }
-
-                        // Индикатор озвучивания
-                        Row {
-                            Layout.alignment: Qt.AlignHCenter
-                            spacing: Theme.paddingSmall
-                            visible: audioController.isSpeaking
-
-                            Rectangle {
-                                width: 10
-                                height: 10
-                                radius: 5
-                                color: Theme.accentColor
-                                anchors.verticalCenter: parent.verticalCenter
-
-                                SequentialAnimation on opacity {
-                                    running: audioController.isSpeaking
-                                    loops: Animation.Infinite
-                                    NumberAnimation { from: 1.0; to: 0.3; duration: 500 }
-                                    NumberAnimation { from: 0.3; to: 1.0; duration: 500 }
-                                }
-                            }
-
-                            Text {
-                                text: "🔊 Озвучивание..."
-                                font.pixelSize: Theme.fontSizeSmall
-                                color: Theme.adaptiveTextSecondary
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-                        }
-                    }
-                }
-
-                // Real-time график Alpha/Beta/Theta (Canvas-based)
+                // 1. График Alpha/Beta/Theta (вверху)
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
+                    Layout.preferredHeight: 200
                     color: Theme.surfaceColor
                     radius: Theme.radiusMedium
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: Theme.paddingMedium
-                        spacing: Theme.paddingSmall
+                        anchors.margins: Theme.paddingSmall
+                        spacing: 4
 
                         Text {
                             text: "Real-time Alpha/Beta/Theta"
-                            font.pixelSize: Theme.fontSizeHeading3
+                            font.pixelSize: Theme.fontSizeBody
                             font.weight: Theme.fontWeightMedium
                             color: Theme.adaptiveTextPrimary
                         }
 
-                        // Canvas-based график (замена QtCharts)
                         LineChart {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             alphaHistory: metricsModel ? metricsModel.alphaHistory : []
                             betaHistory: metricsModel ? metricsModel.betaHistory : []
                             thetaHistory: metricsModel ? metricsModel.thetaHistory : []
+                        }
+                    }
+                }
+
+                // 2. Метрики (посередине)
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredHeight: 150
+                    color: Theme.surfaceColor
+                    radius: Theme.radiusMedium
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: Theme.paddingSmall
+                        spacing: Theme.paddingMedium
+
+                        // Колонка 1: Alpha/Beta/Theta
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 4
+
+                            Text { text: "Волны"; font.pixelSize: 14; font.weight: Font.Medium; color: Theme.adaptiveTextPrimary }
+
+                            RowLayout { Layout.fillWidth: true; spacing: 6
+                                Text { text: "Alpha"; color: Theme.alphaColor; font.pixelSize: 13; Layout.preferredWidth: 50 }
+                                MetricsProgressBar { Layout.fillWidth: true; from: 0; to: 100; value: metricsModel ? metricsModel.alpha : 0; customColor: Theme.alphaColor }
+                                Text { text: metricsModel ? Math.round(metricsModel.alpha) + "%" : "0%"; font.family: Theme.fontFamilyMono; font.pixelSize: 13; color: Theme.alphaColor; Layout.preferredWidth: 40 }
+                            }
+                            RowLayout { Layout.fillWidth: true; spacing: 6
+                                Text { text: "Beta"; color: Theme.betaColor; font.pixelSize: 13; Layout.preferredWidth: 50 }
+                                MetricsProgressBar { Layout.fillWidth: true; from: 0; to: 100; value: metricsModel ? metricsModel.beta : 0; customColor: Theme.betaColor }
+                                Text { text: metricsModel ? Math.round(metricsModel.beta) + "%" : "0%"; font.family: Theme.fontFamilyMono; font.pixelSize: 13; color: Theme.betaColor; Layout.preferredWidth: 40 }
+                            }
+                            RowLayout { Layout.fillWidth: true; spacing: 6
+                                Text { text: "Theta"; color: Theme.thetaColor; font.pixelSize: 13; Layout.preferredWidth: 50 }
+                                MetricsProgressBar { Layout.fillWidth: true; from: 0; to: 100; value: metricsModel ? metricsModel.theta : 0; customColor: Theme.thetaColor }
+                                Text { text: metricsModel ? Math.round(metricsModel.theta) + "%" : "0%"; font.family: Theme.fontFamilyMono; font.pixelSize: 13; color: Theme.thetaColor; Layout.preferredWidth: 40 }
+                            }
+                        }
+
+                        Rectangle { width: 1; Layout.fillHeight: true; color: Theme.borderColor; opacity: 0.3 }
+
+                        // Колонка 2: Концентрация/Релаксация
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 4
+
+                            Text { text: "Состояние"; font.pixelSize: 14; font.weight: Font.Medium; color: Theme.adaptiveTextPrimary }
+
+                            RowLayout { Layout.fillWidth: true; spacing: 6
+                                Text { text: "Концентр."; color: Theme.adaptiveTextSecondary; font.pixelSize: 13; Layout.preferredWidth: 70 }
+                                MetricsProgressBar { Layout.fillWidth: true; from: 0; to: 100; value: metricsModel ? metricsModel.concentration : 0 }
+                                Text { text: metricsModel ? Math.round(metricsModel.concentration) + "%" : "0%"; font.family: Theme.fontFamilyMono; font.pixelSize: 13; color: Theme.concentrationColor; Layout.preferredWidth: 40 }
+                            }
+                            RowLayout { Layout.fillWidth: true; spacing: 6
+                                Text { text: "Релаксация"; color: Theme.adaptiveTextSecondary; font.pixelSize: 13; Layout.preferredWidth: 70 }
+                                MetricsProgressBar { Layout.fillWidth: true; from: 0; to: 100; value: metricsModel ? metricsModel.relaxation : 0 }
+                                Text { text: metricsModel ? Math.round(metricsModel.relaxation) + "%" : "0%"; font.family: Theme.fontFamilyMono; font.pixelSize: 13; color: Theme.relaxationColor; Layout.preferredWidth: 40 }
+                            }
+                            RowLayout { Layout.fillWidth: true; spacing: 6
+                                Text { text: "Success"; color: Theme.adaptiveTextSecondary; font.pixelSize: 13; Layout.preferredWidth: 70 }
+                                MetricsProgressBar { Layout.fillWidth: true; from: 0; to: 100; value: metricsModel ? metricsModel.successRate : 0 }
+                                Text {
+                                    text: metricsModel ? Math.round(metricsModel.successRate) + "%" : "0%"
+                                    font.family: Theme.fontFamilyMono; font.pixelSize: 13; font.weight: Font.Bold; Layout.preferredWidth: 40
+                                    color: { var r = metricsModel ? metricsModel.successRate : 0; return r >= 70 ? Theme.successColor : r >= 40 ? Theme.warningColor : Theme.errorColor }
+                                }
+                            }
+                        }
+
+                        Rectangle { width: 1; Layout.fillHeight: true; color: Theme.borderColor; opacity: 0.3 }
+
+                        // Колонка 3: Пульс
+                        ColumnLayout {
+                            Layout.preferredWidth: 100
+                            spacing: 4
+
+                            Text { text: "Пульс"; font.pixelSize: 14; font.weight: Font.Medium; color: Theme.adaptiveTextPrimary }
+
+                            Text {
+                                text: metricsModel ? metricsModel.heartRate : "0"
+                                font.family: Theme.fontFamilyMono
+                                font.pixelSize: 40
+                                font.weight: Font.Bold
+                                color: Theme.heartRateColor
+                                Layout.alignment: Qt.AlignHCenter
+                            }
+                            Text {
+                                text: "BPM"
+                                font.pixelSize: 13
+                                color: Theme.adaptiveTextSecondary
+                                Layout.alignment: Qt.AlignHCenter
+                            }
+                        }
+                    }
+                }
+
+                // 3. Инструкции (внизу)
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredHeight: 120
+                    color: Theme.surfaceColor
+                    border.color: phaseColor
+                    border.width: 2
+                    radius: Theme.radiusMedium
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: Theme.paddingMedium
+                        spacing: Theme.paddingMedium
+
+                        // Иконка фазы
+                        Text {
+                            text: phaseIcon
+                            font.pixelSize: 40
+                            Layout.alignment: Qt.AlignVCenter
+                        }
+
+                        // Текст инструкции
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            spacing: 4
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: Theme.paddingSmall
+
+                                Text {
+                                    text: phaseName
+                                    font.pixelSize: Theme.fontSizeHeading3
+                                    font.weight: Theme.fontWeightMedium
+                                    color: phaseColor
+                                }
+
+                                Item { Layout.fillWidth: true }
+
+                                // Индикатор паузы
+                                Rectangle {
+                                    width: 70; height: 24; radius: 12
+                                    color: Theme.warningColor
+                                    visible: isPaused
+                                    Text { anchors.centerIn: parent; text: "ПАУЗА"; font.pixelSize: 12; font.weight: Font.Bold; color: "white" }
+                                }
+
+                                // Индикатор озвучивания
+                                Row {
+                                    spacing: 6
+                                    visible: audioController.isSpeaking
+                                    Rectangle {
+                                        width: 10; height: 10; radius: 5; color: Theme.primaryColor
+                                        SequentialAnimation on opacity { running: audioController.isSpeaking; loops: Animation.Infinite
+                                            NumberAnimation { from: 1.0; to: 0.3; duration: 500 }
+                                            NumberAnimation { from: 0.3; to: 1.0; duration: 500 }
+                                        }
+                                    }
+                                    Text { text: "Озвучивание"; font.pixelSize: 12; color: Theme.adaptiveTextSecondary }
+                                }
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                text: currentInstruction
+                                font.pixelSize: Theme.fontSizeBody
+                                color: Theme.adaptiveTextPrimary
+                                wrapMode: Text.WordWrap
+                                verticalAlignment: Text.AlignTop
+                            }
                         }
                     }
                 }
